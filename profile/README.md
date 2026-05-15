@@ -1,15 +1,24 @@
 # Arbiter Systems
 
-Arbiter Systems is building AI infrastructure for controlled, observable, and reliable model execution.
+AI infrastructure control plane for policy, routing, resilience, and observability.
 
-Our focus is on the foundation teams need to run AI workloads with confidence:
+## What we're building
 
-- AI control plane architecture
-- Provider-agnostic model execution
-- Request routing and fallback foundations
-- Tenant and correlation context propagation
-- Structured observability
-- Policy-aware execution
-- Resilience and reliability patterns
+Arbiter Systems is building infrastructure for controlled AI model execution across providers, policies, and operational boundaries. The platform is intended to centralize execution control, governance, provider routing, resilience boundaries, observability, and policy enforcement so AI workloads can be managed through a consistent control plane.
 
-The project is currently in active development, with an emphasis on clean architecture, deterministic behavior, and infrastructure that can scale from MVP to production-grade AI systems.
+## Repositories
+
+- [control-plane-api](https://github.com/arbiter-systems/control-plane-api) - API surface for control plane policy, configuration, and operational coordination.
+- [ai-execution-service](https://github.com/arbiter-systems/ai-execution-service) - Runtime service for policy-aware model execution and provider routing.
+
+## Project status
+
+Arbiter Systems is in active early development and pre-MVP. Public materials will stay high-level while the platform architecture and repository boundaries continue to mature.
+
+## Architecture & docs
+
+Architecture and documentation links will be added here as they land.
+
+## Contact
+
+Contact: [patrickrcharles@gmail.com](mailto:patrickrcharles@gmail.com)
