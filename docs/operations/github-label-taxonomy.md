@@ -16,6 +16,20 @@ Use these label families for active planning and issue triage:
 | `priority/*` | Relative ordering signal. | Use one priority label per active issue. |
 | `type/*` | Work classification. | Use one primary type label per issue. |
 
+## Color Palette
+
+Use this palette for canonical labels across active Arbiter Systems repositories:
+
+| Label Pattern | Color | Description |
+|---|---:|---|
+| `area/*` | `#1d76db` | Cross-cutting area |
+| `component/*` | `#5319e7` | Implementation component |
+| `phase/*` | `#0e8a16` | Delivery phase |
+| `priority/high` | `#b60205` | Relative ordering signal |
+| `priority/medium` | `#fbca04` | Relative ordering signal |
+| `priority/low` | `#c2e0c6` | Relative ordering signal |
+| `type/*` | `#6f42c1` | Work classification |
+
 ## Canonical Labels
 
 ### Areas
@@ -58,6 +72,14 @@ Use these label families for active planning and issue triage:
 - `type/docs`
 - `type/test`
 - `type/epic`
+
+## Stock GitHub Defaults
+
+GitHub default labels are retained.
+
+New Arbiter planning issues should prefer canonical `type/*` labels, especially `type/docs` instead of `documentation` and `type/feature` instead of `enhancement`.
+
+Existing uses of stock labels should be cleaned up in a separate issue-label cleanup pass.
 
 ## Repo Usage Guidance
 
