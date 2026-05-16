@@ -39,6 +39,42 @@ Keep all content public-safe.
 - Avoid implementation promises that are not already true or explicitly approved.
 - Keep organization profile content aligned with Arbiter Systems as AI infrastructure for controlled, observable, reliable model execution.
 
+## Usage and Review Discipline
+
+Keep responses concise and task-scoped.
+
+Current tool roles:
+- Codex: implementation, tests, build/test iteration, PR-ready changes.
+- Claude: architecture, issue refinement, scope control, diff review.
+- Copilot: inline autocomplete and small local edits.
+
+Default behavior:
+- Inspect only files relevant to the current issue, branch, or diff.
+- Do not perform whole-repo audits unless explicitly requested.
+- Do not re-architect existing systems unless the issue requires it.
+- Prefer small, issue-focused changes over broad cleanup.
+- Avoid repeating repository context unless it directly affects the change.
+
+Review format:
+1. Merge blockers
+2. Non-blocking issues
+3. Tests/validation checked
+4. Scope creep check
+5. Final recommendation
+
+Review depth:
+- Docs-only changes: light review.
+- Test-only changes: light review.
+- Small implementation changes: standard review.
+- Security, policy, routing, tenant isolation, execution tracing, provider fallback, quota, or public API changes: full review.
+
+Implementation rules:
+- Stay within the GitHub issue acceptance criteria.
+- Do not introduce persistence, billing, dashboards, replay, marketplaces, advanced policy DSLs, multi-region routing, or background workers unless explicitly requested.
+- Preserve existing public contracts unless the issue requires a contract change.
+- Add or update tests when behavior changes.
+- Run the repo's documented validation commands before reporting completion.
+
 ## Validation
 
 For documentation-only changes, inspect rendered markdown where practical. If templates or automation files are added later, validate them with the repository-appropriate tooling.
