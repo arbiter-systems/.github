@@ -18,6 +18,28 @@ Use these label families for active planning and issue triage:
 
 ## Canonical Labels
 
+## Color Palette
+
+Use this palette for canonical labels across active Arbiter Systems repositories:
+
+| Label Pattern | Color | Description |
+|---|---:|---|
+| `area/*` | `#1d76db` | Cross-cutting area |
+| `component/*` | `#5319e7` | Implementation component |
+| `phase/*` | `#0e8a16` | Delivery phase |
+| `priority/high` | `#b60205` | Relative ordering signal |
+| `priority/medium` | `#fbca04` | Relative ordering signal |
+| `priority/low` | `#c2e0c6` | Relative ordering signal |
+| `type/*` | `#6f42c1` | Work classification |
+
+## Stock GitHub Defaults
+
+GitHub defaults are retained.
+
+New Arbiter planning issues should prefer `type/docs` and `type/feature`.
+
+Existing uses should be cleaned up in a separate issue-label cleanup pass.
+
 ### Areas
 
 - `area/execution`
