@@ -21,4 +21,4 @@ Architecture and documentation links will be added here as they land.
 
 ## Contact
 
-Contact: [patrickrcharles@gmail.com](mailto:patrickrcharles@gmail.com)
+Contact: [founder@arbitersystems.io](mailto:founder@arbitersystems.io)
