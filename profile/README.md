@@ -1,24 +1,18 @@
 # Arbiter Systems
 
-AI infrastructure control plane for policy, routing, resilience, and observability.
+AI Execution Firewall for controlling cost, reliability, routing, and governance in production AI systems.
 
-## What we're building
-
-Arbiter Systems is building infrastructure for controlled AI model execution across providers, policies, and operational boundaries. The platform is intended to centralize execution control, governance, provider routing, resilience boundaries, observability, and policy enforcement so AI workloads can be managed through a consistent control plane.
+Arbiter Systems helps engineering teams control AI execution across providers, policies, and operational boundaries. The platform routes AI requests, applies policy and budget-aware controls, tracks provider readiness, reduces waste from failed calls and retries, and produces structured execution receipts without storing raw prompts by default.
 
 ## Repositories
 
-- [control-plane-api](https://github.com/arbiter-systems/control-plane-api) - API surface for control plane policy, configuration, and operational coordination.
-- [ai-execution-service](https://github.com/arbiter-systems/ai-execution-service) - Runtime service for policy-aware model execution and provider routing.
+- `control-plane-api` — Control Plane API for policy, routing, resilience, execution receipts, provider readiness, and operational coordination.
+- `ai-execution-service` — Runtime service for model execution, provider integration, streaming responses, and execution handoff.
 
 ## Project status
 
-Arbiter Systems is in active early development and pre-MVP. Public materials will stay high-level while the platform architecture and repository boundaries continue to mature.
-
-## Architecture & docs
-
-Architecture and documentation links will be added here as they land.
+Active early development. Current MVP focus: AI Execution Firewall, cost control, provider readiness, retry/waste reduction, budget-aware routing, execution receipts, prompt privacy, and low-overhead pass-through execution.
 
 ## Contact
 
-Contact: [founder@arbitersystems.io](mailto:founder@arbitersystems.io)
+founder@arbitersystems.io
