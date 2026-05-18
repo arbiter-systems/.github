@@ -34,30 +34,43 @@ Use this palette for canonical labels across active Arbiter Systems repositories
 
 ### Areas
 
-- `area/execution`
-- `area/docs`
-- `area/config`
-- `area/security`
-- `area/observability`
-- `area/providers`
-- `area/governance`
-- `area/provenance`
+- `area/architecture`
 - `area/ci`
+- `area/config`
+- `area/console` — console-scoped; may be repo-local to `arbiter-console`
+- `area/cost-control`
+- `area/demo`
+- `area/docs`
+- `area/execution`
+- `area/governance`
+- `area/mvp`
+- `area/observability`
+- `area/policy`
+- `area/privacy`
+- `area/provenance`
+- `area/providers`
+- `area/resilience`
+- `area/routing`
+- `area/security`
+- `area/site` — public-site-scoped; may be repo-local to `arbiter-site`
 
 ### Components
 
 - `component/core`
-- `component/ops`
-- `component/startup`
-- `component/routing`
 - `component/contracts`
 - `component/infrastructure`
+- `component/observability`
+- `component/ops`
 - `component/platform`
+- `component/routing`
+- `component/startup`
 
 ### Phases
 
 - `phase/foundation`
 - `phase/hardening`
+- `phase/mvp`
+- `phase/post-mvp`
 
 ### Priorities
 
@@ -68,6 +81,7 @@ Use this palette for canonical labels across active Arbiter Systems repositories
 ### Types
 
 - `type/feature`
+- `type/bug`
 - `type/chore`
 - `type/docs`
 - `type/test`
@@ -75,22 +89,44 @@ Use this palette for canonical labels across active Arbiter Systems repositories
 
 ## Stock GitHub Defaults
 
-GitHub default labels are retained.
-
-New Arbiter planning issues should prefer canonical `type/*` labels, especially `type/docs` instead of `documentation` and `type/feature` instead of `enhancement`.
+GitHub default labels are retained for compatibility, but new Arbiter planning issues should prefer canonical `type/*` labels. Use `type/bug` for defects instead of the stock `bug` label when applying the shared taxonomy. Prefer `type/docs` over `documentation` and `type/feature` over `enhancement`.
 
 Existing uses of stock labels should be cleaned up in a separate issue-label cleanup pass.
 
 ## Repo Usage Guidance
 
+`area/site` and `area/console` are scoped to specific public-facing repos and may be created locally rather than org-wide:
+
+- `area/site` — use in `arbiter-systems/arbiter-site` only; skip in backend or ops repos.
+- `area/console` — use in `arbiter-systems/arbiter-console` only; skip in backend or ops repos.
+
+`component/platform`, `component/core`, `component/routing`, and `component/contracts` already exist in the taxonomy; do not create synonyms or duplicates.
+
 | Repository | Common Labels |
 |---|---|
-| `arbiter-systems/control-plane-api` | `area/execution`, `area/config`, `area/observability`, `area/providers`, `area/security`, `component/core`, `component/startup`, `component/routing`, `component/contracts`, `component/infrastructure` |
-| `arbiter-systems/ai-execution-service` | `area/execution`, `area/observability`, `area/security`, `component/core`, `component/contracts`, `component/infrastructure` |
-| `arbiter-systems/.github` | `area/docs`, `area/ci`, `area/governance`, `component/ops`, `component/platform` |
-| `arbiter-systems/arbiter-site` | `area/docs`, `area/ci`, `component/platform`, `component/infrastructure` |
-| `arbiter-systems/arbiter-console` | `area/observability`, `area/governance`, `component/platform`, `component/core` |
-| `arbiter-systems/internal-roadmap` | `area/governance`, `area/provenance`, `area/docs`, `type/epic`, `component/ops` |
+| `arbiter-systems/control-plane-api` | `area/execution`, `area/config`, `area/observability`, `area/providers`, `area/security`, `area/routing`, `area/policy`, `area/privacy`, `area/resilience`, `area/cost-control`, `area/mvp`, `component/core`, `component/startup`, `component/routing`, `component/contracts`, `component/infrastructure` |
+| `arbiter-systems/ai-execution-service` | `area/execution`, `area/observability`, `area/security`, `area/routing`, `area/resilience`, `area/mvp`, `component/core`, `component/contracts`, `component/infrastructure` |
+| `arbiter-systems/.github` | `area/docs`, `area/ci`, `area/governance`, `area/architecture`, `component/ops`, `component/platform` |
+| `arbiter-systems/arbiter-site` | `area/docs`, `area/ci`, `area/site`, `area/demo`, `component/platform`, `component/infrastructure` |
+| `arbiter-systems/arbiter-console` | `area/observability`, `area/governance`, `area/console`, `area/demo`, `component/platform`, `component/core` |
+| `arbiter-systems/internal-roadmap` | `area/governance`, `area/provenance`, `area/docs`, `area/architecture`, `area/mvp`, `type/epic`, `component/ops` |
+
+## Examples
+
+- Execution trace sink issue in `control-plane-api`:
+  `type/feature`, `priority/high`, `phase/mvp`, `area/execution`, `area/observability`, `component/core`
+
+- Defect in firewall policy evaluation in `control-plane-api`:
+  `type/bug`, `priority/high`, `phase/mvp`, `area/execution`, `area/policy`, `component/core`
+
+- Documentation-only roadmap update in `.github`:
+  `type/docs`, `priority/medium`, `phase/foundation`, `area/docs`, `area/architecture`, `component/ops`
+
+- Console execution trace detail screen in `arbiter-console`:
+  `type/feature`, `priority/medium`, `phase/mvp`, `area/console`, `area/observability`, `component/core`
+
+- Post-MVP semantic routing work deferred from active sprint:
+  `type/feature`, `priority/low`, `phase/post-mvp`, `area/routing`, `area/resilience`, `component/routing`
 
 ## Triage Rules
 
