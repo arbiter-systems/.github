@@ -8,3 +8,5 @@
 
 - [Codex Issue Prompt Template](../codex-issue-prompt-template.md)
 - [Pull Request Checklist Template](../../PULL_REQUEST_TEMPLATE.md)
+- [Agent Workflow Wrappers](../agent-workflow-wrappers.md)
+- [Agent Workflow Examples](../agent-workflow-examples.md)
