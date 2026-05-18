@@ -32,15 +32,15 @@ The MVP is sellable and demo-ready when all of the following are true.
 ### Execution Receipt
 
 - [ ] The `final` SSE event carries `executionId`, `correlationId`, `provider`, `model`, and `usage` (inputTokens, outputTokens, totalTokens). — *Available; verify against current final SSE event output before marking complete.*
-- [ ] `policyReason` is returned in the receipt as a plain-English string describing the control decision applied: provider skipped, budget enforced, or route selected. — *Planned; see parent epic arbiter-systems/control-plane-api#133. Needs dedicated tracking issue.*
+- [ ] `policyReason` is returned in the receipt as a plain-English string describing the control decision applied: provider skipped, budget enforced, or route selected. — *Planned; see parent epic arbiter-systems/control-plane-api#133. See linked tracking issue.*
 - [ ] Receipt is readable by a non-engineer in a demo context without additional tooling.
 
 ### Cost and Waste Controls
 
 - [ ] **Unhealthy provider skip demonstrated:** when a provider is not ready, the routing layer skips it and the receipt reflects the decision. — *Tracked in arbiter-systems/control-plane-api#151.*
-- [ ] **Retry suppression demonstrated:** unnecessary re-attempts against a known-failing provider are blocked at the routing layer rather than forwarded. — *Needs tracking issue.*
-- [ ] **Budget enforcement or route downgrade demonstrated:** an execution is blocked or redirected when a budget ceiling or route preference policy applies. — *Planned; see parent epic arbiter-systems/control-plane-api#133. Needs dedicated tracking issue.*
-- [ ] **Cost signal in demo output:** `costAvoided` or equivalent waste-reduction signal appears in demo output, showing estimated cost avoided by a routing or enforcement decision. — *Planned; see parent epic arbiter-systems/control-plane-api#133. Needs dedicated tracking issue.*
+- [ ] **Retry suppression demonstrated:** unnecessary re-attempts against a known-failing provider are blocked at the routing layer rather than forwarded. — *See linked tracking issue.*
+- [ ] **Budget enforcement or route downgrade demonstrated:** an execution is blocked or redirected when a budget ceiling or route preference policy applies. — *Planned; see parent epic arbiter-systems/control-plane-api#133. See linked tracking issue.*
+- [ ] **Cost signal in demo output:** `costAvoided` or equivalent waste-reduction signal appears in demo output, showing estimated cost avoided by a routing or enforcement decision. — *Planned; see parent epic arbiter-systems/control-plane-api#133. See linked tracking issue.*
 
 ### Privacy and Overhead Posture
 
@@ -51,8 +51,8 @@ The MVP is sellable and demo-ready when all of the following are true.
 ### Docs and Site
 
 - [ ] Integration guide exists and is accurate for the MVP contract: endpoint, request shape, response shape, receipt fields. — *[Integration Contract](./mvp-execution-gateway-integration-contract.md) covers this; verify against final receipt fields before marking complete.*
-- [ ] An AI Waste Report or equivalent demo summary document exists that maps demo execution receipt output to buyer pain: waste avoided, cost signal, policy reason applied. — *Needs tracking issue.*
-- [ ] Site or docs include an integration overview or ROI-framing page a buyer can read without source code access. — *Needs tracking issue.*
+- [ ] An AI Waste Report or equivalent demo summary document exists that maps demo execution receipt output to buyer pain: waste avoided, cost signal, policy reason applied. — *See linked tracking issue.*
+- [ ] Site or docs include an integration overview or ROI-framing page a buyer can read without source code access. — *See linked tracking issue.*
 - [ ] All published docs follow [MVP Claim Guardrails](./mvp-claim-guardrails.md) language.
 
 ## Recommended Implementation Order
@@ -63,15 +63,15 @@ Suggested order for remaining gate items:
 
 1. **Cached provider readiness and unhealthy provider skip** — arbiter-systems/control-plane-api#151. Unblocks the retry suppression and unhealthy provider skip demo gates.
 2. **Provider payload pass-through validation and overhead measurement** — arbiter-systems/control-plane-api#149, #150, #153. Unblocks the pass-through posture and timing demo gates.
-3. **`policyReason` receipt field** — Plain-English control reason in the `final` event. Unblocks receipt readability and the demo script. *Needs dedicated tracking issue.*
-4. **Budget enforcement or route downgrade** — `budgetHint` enforcement or `routePreference` application. Unblocks the budget block demo gate. *Needs dedicated tracking issue.*
-5. **`costAvoided` receipt field or equivalent waste signal** — Estimated cost avoided by a routing or enforcement decision. Unblocks the cost signal demo gate. *Needs dedicated tracking issue.*
-6. **AI Waste Report or demo receipt summary** — Written after the receipt fields above are available; ties demo output to buyer pain. *Needs dedicated tracking issue.*
-7. **Integration overview and ROI-framing page** — Site or docs update; follows AI Waste Report and receipt field completion. *Needs dedicated tracking issue.*
+3. **`policyReason` receipt field** — Plain-English control reason in the `final` event. Unblocks receipt readability and the demo script. *See linked tracking issue.*
+4. **Budget enforcement or route downgrade** — `budgetHint` enforcement or `routePreference` application. Unblocks the budget block demo gate. *See linked tracking issue.*
+5. **`costAvoided` receipt field or equivalent waste signal** — Estimated cost avoided by a routing or enforcement decision. Unblocks the cost signal demo gate. *See linked tracking issue.*
+6. **AI Waste Report or demo receipt summary** — Written after the receipt fields above are available; ties demo output to buyer pain. *See linked tracking issue.*
+7. **Integration overview and ROI-framing page** — Site or docs update; follows AI Waste Report and receipt field completion. *See linked tracking issue.*
 
 ## Tracking Notes
 
-arbiter-systems/control-plane-api#133 is the parent sellable MVP epic. Each unresolved checklist item above should have a dedicated implementation or docs issue linked to that epic. Items marked *Needs dedicated tracking issue* in this document do not yet have one. Create a dedicated issue before starting implementation work on those items so scope and acceptance criteria are clear before execution begins.
+arbiter-systems/control-plane-api#133 is the parent sellable MVP epic. Each unresolved checklist item above should have a dedicated implementation or docs issue linked to that epic. Items marked *See linked tracking issue* in this document do not yet have one. Create a dedicated issue before starting implementation work on those items so scope and acceptance criteria are clear before execution begins.
 
 ## Post-MVP: Deferred Work
 
