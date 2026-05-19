@@ -8,7 +8,7 @@ Claude reviews should enforce issue scope, repo guardrails, validation quality, 
 
 This checklist supplements, but does not replace, `PULL_REQUEST_TEMPLATE.md` and repo-local `AGENTS.md`.
 
-A review-only task does not authorize Claude to create branches, commits, pushes, or pull requests.
+A review-only task does not authorize Claude to create branches, commits, pushes, or pull requests. For branch, commit, PR title, and issue-linking conventions, see [`docs/git-conventions.md`](git-conventions.md).
 
 ## Before You Start
 
@@ -22,6 +22,7 @@ A review-only task does not authorize Claude to create branches, commits, pushes
 
 - [ ] Issue number is present.
 - [ ] PR maps to one issue.
+- [ ] Deferred issues are not implemented without explicit promotion — see [issue-lane-policy.md](issue-lane-policy.md).
 - [ ] Non-goals are respected.
 - [ ] No hidden refactors, broad cleanup, or unrelated files are included.
 - [ ] Follow-up work is listed instead of silently added.

@@ -52,6 +52,9 @@ Use the same conventional prefix and optional scope pattern as commit messages. 
 | `123-docs/git-conventions` | `docs(repo): add Git conventions` |
 | `151-test/provider-readiness-contracts` | `test(contracts): cover provider readiness contracts` |
 | `220-chore/repo-metadata-cleanup` | `chore(repo): clean up repository metadata` |
+| `228-refactor/provider-routing-boundary` | `refactor(routing): simplify provider routing boundary` |
+| `229-style/markdown-table-formatting` | `style(docs): normalize markdown table formatting` |
+| `230-ci/markdown-link-check` | `ci(docs): add markdown link check` |
 
 ## Linking PRs to Issues
 
