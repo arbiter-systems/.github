@@ -4,6 +4,10 @@
 
 - [Web and Console Timing Checklist](web-console-timing.md)
 
+## Maps and Diagrams
+
+- [MVP Dependency Map](../project/mvp-dependency-map.md)
+
 ## Templates
 
 - [Codex Issue Prompt Template](../codex-issue-prompt-template.md)
