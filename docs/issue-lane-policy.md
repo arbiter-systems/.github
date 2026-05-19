@@ -62,6 +62,12 @@ Ready and Blocked are status labels applied within a lane. They are not independ
 
 Arbiter repositories use the shared label taxonomy described in [`docs/operations/github-label-taxonomy.md`](operations/github-label-taxonomy.md). If an org-level `.github/labels.yml` file is present in a repository, it is also a source of shared label definitions.
 
+When an issue is tracked in the Arbiter GitHub Project, Project fields are the operational source of truth for execution management. GitHub Project field semantics are defined in the [GitHub Project operating model](operations/github-project-operating-model.md).
+
+For tracked issues, Project `Lane` and `Status` fields are authoritative for lane, status, readiness, blockers, and priority. Repository labels such as `lane: active-mvp`, `lane: deferred`, `status: ready`, and `status: blocked` are optional search and filter helpers for issue lists and views that do not have access to Project field data.
+
+Labels complement Project fields but do not override them, and labels and Project fields must not intentionally conflict.
+
 This policy expects these lane and status labels:
 
 | Label | Meaning |
@@ -72,6 +78,13 @@ This policy expects these lane and status labels:
 | `status: blocked` | The Active MVP issue is blocked and must include a blocking reason or link. |
 
 If these labels are not present in a repository, treat them as expected label names only. Do not create, synchronize, or modify labels as part of this policy issue.
+
+### Label vs. Project Field Conflict Resolution
+
+- If a label and the corresponding GitHub Project field disagree, treat the Project field as authoritative.
+- Update the stale label during triage or label-cleanup work.
+- Leave an issue comment when the label cleanup affects implementation eligibility, such as moving work from deferred to active scope or from not-ready to ready.
+- Label cleanup does not by itself authorize implementation if the Project field still says the issue is deferred, blocked, not ready, or otherwise not eligible.
 
 ## Promotion Process
 
@@ -89,6 +102,10 @@ When a human promotes a deferred issue:
 These rules apply to Claude, Codex, Copilot, and other AI coding agents working across Arbiter repositories:
 
 - Do not implement any issue labeled `lane: deferred` unless a human has explicitly promoted it and the label has changed.
+- AI agents must not self-promote deferred work through either labels or GitHub Project fields.
+- A conflicting label does not by itself authorize or block implementation; agents must follow the authoritative Project field and apply the Promotion Process when escalation or human approval is needed.
+- AI agents may recommend that stale lane/status labels be updated to match the GitHub Project field state, but they must not mutate GitHub Project fields unless explicitly directed by a human owner.
+- If label state and GitHub Project field state conflict, agents must follow the Project field as authoritative and surface the conflict in their completion report.
 - Do not treat roadmap epics, post-MVP issues, old issue numbers, or strategic architecture issues as implementation signals.
 - One issue maps to one branch, one session, and one PR.
 - Multi-issue work requires explicit human approval documented in the issue or PR body.
