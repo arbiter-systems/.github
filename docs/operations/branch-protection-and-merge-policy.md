@@ -4,6 +4,8 @@
 
 Arbiter Systems repositories should use branch protection and merge rules to keep changes reviewable, CI-backed, and reversible as work expands across backend services, public web properties, console work, and organization operations. This checklist documents the intended safety posture only; it does not apply repository settings, create rulesets, or enforce required checks.
 
+See also: [pr-quality-gates.md](pr-quality-gates.md) for per-repo PR readiness commands and recommended CI check names.
+
 ## Default Branch Protection Checklist
 
 Use this as the recommended default for active repositories once their CI workflows are stable enough to rely on.
