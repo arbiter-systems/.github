@@ -99,6 +99,7 @@ The deferred boundaries come from [`docs/issue-lane-policy.md`](../issue-lane-po
 | [`.github#37`](https://github.com/arbiter-systems/.github/issues/37) | `.github` | complete | Required PR quality gates. |
 | [`.github#43`](https://github.com/arbiter-systems/.github/issues/43) | `.github` | complete | MVP release readiness checklist. |
 | [`.github#55`](https://github.com/arbiter-systems/.github/issues/55) | `.github` | complete | Issue lane policy exists and classifies active MVP, deferred/post-MVP, ready, and blocked work for AI agents. |
+| [`.github#64`](https://github.com/arbiter-systems/.github/issues/64) | `.github` | complete | GitHub Project operating model documentation. |
 
 ## Related Docs
 
