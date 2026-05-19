@@ -4,6 +4,57 @@
 
 Arbiter Systems repositories use a shared GitHub label taxonomy so backlog triage, implementation ordering, cross-repo planning, and issue cleanup stay consistent as work moves across backend services, public web properties, console work, and organization operations.
 
+## Labels vs. GitHub Project Fields
+
+### Role of Labels
+
+Labels are used for taxonomy, ownership routing, search and filter helpers, and lightweight automation triggers. They help teams classify work consistently across repositories without becoming the execution system of record.
+
+### Role of GitHub Project Fields
+
+GitHub Project fields are the operational source of truth for execution management. The [GitHub Project operating model](github-project-operating-model.md) defines how execution state, sequencing, blockers, readiness, confidence, and cross-cutting work context are managed through Project fields rather than labels.
+
+Project-field concepts that belong in Project fields rather than labels include:
+
+- Status
+- Lane
+- Implementation Order
+- Blocked By
+- Release Gate
+- Validation Command
+- Agent
+- Last Reviewed
+- Confidence
+- Implementation Readiness
+- Scope Risk
+- Project Priority
+- Phase
+- Workstream
+
+### Do Not Create Labels For Project Field Values
+
+The following values are already represented by named Project fields, and adding labels for them creates two competing sources of truth:
+
+- `status:ready`
+- `status:blocked`
+- `status:in-progress`
+- `scope:low`
+- `scope:medium`
+- `scope:high`
+- `agent:codex`
+- `agent:claude`
+- `agent:copilot`
+- `confidence:high`
+- `confidence:medium`
+- `confidence:low`
+- `implementation-readiness:ready`
+- `implementation-readiness:not-ready`
+- `release-gate:no`
+- `release-gate:local-mvp`
+- `validation-command:*`
+- `workstream:*`
+- `project-priority:*`
+
 ## Label Families
 
 Use these label families for active planning and issue triage:

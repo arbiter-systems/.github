@@ -11,7 +11,7 @@ Labels remain useful, but they serve a different role. Labels are taxonomy, rout
 | Field name | Type | Allowed values | Who manages it | Agent read/write permission |
 |---|---|---|---|---|
 | Repo | Single select | `.github`, `control-plane-api`, `ai-execution-service`, `arbiter-console`, `arbiter-site`, `internal-roadmap` | Human | Read only |
-| Phase | Single select | `foundation`, `mvp`, `hosted-demo`, `customer-pilot`, `post-mvp` | Human with triage support | Read; write only when explicitly directed or during approved triage work |
+| Phase | Single select | `foundation`, `mvp`, `hosted-demo`, `customer-pilot`, `post-mvp` | Human with triage support | Read; recommend changes; write only when explicitly directed by a Human owner |
 | Lane | Single select | `active-mvp`, `deferred` | Human | Read only |
 | Project Priority | Single select | `High`, `Medium`, `Low` | Human | Read only |
 | Status | Single select | `Inbox`, `Triage`, `Ready`, `In Progress`, `Review`, `Blocked`, `Done`, `Deferred`, `Do Not Implement Yet` | Human for approval and scope states; shared for active execution states | Read; write only for `In Progress`, `Review`, and `Blocked` when user-scoped and human-approved |
@@ -74,7 +74,7 @@ When a label and a Project field disagree on status, phase, or priority, the Pro
 
 ## Milestone to Project Field Mapping
 
-Milestones set buyer-facing checkpoints. Release Gate and Phase fields control per-issue sequencing inside the project.
+Milestones set buyer-facing checkpoints, while Release Gate and Phase fields control per-issue sequencing inside the project.
 
 | Milestone | Scope summary | Authority doc |
 |---|---|---|
@@ -84,7 +84,63 @@ Milestones set buyer-facing checkpoints. Release Gate and Phase fields control p
 | Post-MVP | Approved follow-on work outside the sellable MVP gate. | [issue-lane-policy.md](../issue-lane-policy.md) |
 | Deferred | Parked work that remains valid but not implementation-ready. | [issue-lane-policy.md](../issue-lane-policy.md) |
 
-Milestones set buyer-facing checkpoints, while `Release Gate` and `Phase` fields control per-issue sequencing inside the project.
+## Project Views
+
+| View | Purpose | Filter | Group by | Sort |
+|---|---|---|---|---|
+| Active MVP | Daily working view for approved MVP issues. | `Lane = active-mvp` and `Status != Done` and `Status != Deferred` and `Status != Do Not Implement Yet` | `Repo` | `Project Priority`, `Last Reviewed` |
+| Ready for Codex | Implementation queue for issues that are specified and approved. | `Lane = active-mvp` and `Status = Ready` and `Implementation Readiness = ready` and `Agent != Claude` | `Repo` | `Project Priority`, `Confidence` |
+| Claude Review Queue | Review-only queue for architecture or diff review. | `Status = Review` and (`Agent = Claude` or `Agent = mixed`) | `Repo` | `Last Reviewed` |
+| Blocked | Surface blockers that need human action or dependency resolution. | `Status = Blocked` | `Blocked By` | `Last Reviewed` |
+| Security / Hosted Demo Gates | Track issues that gate hosted-demo and customer-pilot readiness. | `Release Gate = hosted-demo` or `Release Gate = customer-pilot` | `Release Gate` | `Project Priority`, `Repo` |
+| Cross-Repo Dependencies | Follow issues whose progress depends on another repo or epic. | `Blocked By is not empty` | `Repo` | `Blocked By`, `Project Priority` |
+| Deferred Parking Lot | Keep valid deferred work visible without treating it as implementation-ready. | `Lane = deferred` or `Status = Deferred` or `Status = Do Not Implement Yet` | `Lane` | `Last Reviewed` |
+| Repo Operations | Ops/docs/project work across organization metadata and process issues. | `Repo = .github` | `Status` | `Project Priority`, `Last Reviewed` |
+| Release Checklist | Review milestone-critical issues before buyer-facing checkpoints. | `Release Gate != none` and `Status != Done` | `Release Gate` | `Status`, `Project Priority` |
+| Recently Stale | Catch items that need re-triage or freshness review. | `Status != Done` and `Last Reviewed` is older than review cadence | `Status` | `Last Reviewed` |
+
+## Dependency Mapping Convention
+
+> Model cross-repo work as one coordination issue or epic plus repo-scoped implementation issues, and record blockers explicitly instead of inferring dependency state from labels alone.
+
+| Mechanism | When to use | Example |
+|---|---|---|
+| parent epic/sub-issue | A cross-repo outcome needs a top-level coordinator and repo-local execution issues. | `control-plane-api#133` as parent epic with repo-specific follow-up issues. |
+| dependency link | One issue cannot proceed until another issue is complete. | `.github` issue depends on a `control-plane-api` receipt-field issue. |
+| issue text reference | A lightweight reference is enough and no formal dependency object exists. | Issue body says "Blocked by `arbiter-console#12`." |
+| project field | A blocker or coordination hint should stay visible in project views. | `Blocked By = control-plane-api#151`. |
+| label | A label improves routing or reporting but should not carry dependency truth by itself. | `area/security` plus `phase/mvp` for a hosted-demo gate item. |
+| milestone | Multiple issues roll up to the same buyer-facing checkpoint. | `Hosted Demo` milestone across docs and backend issues. |
+
+## AI-Agent Workflow Fields
+
+| Field | Agent type | Read/Write | Guidance |
+|---|---|---|---|
+| Repo | Claude, Codex, Copilot | Read | Use for scope confirmation before any implementation or review work. |
+| Phase | Claude, Codex, Copilot | Read | Treat as the authoritative delivery phase. Agents may recommend Phase changes, but they must not autonomously mutate Phase unless explicitly directed by a Human owner. |
+| Lane | Claude, Codex, Copilot | Read | Treat as Human-controlled scope authority. |
+| Project Priority | Claude, Codex, Copilot | Read | Use for ordering context; do not self-escalate Project Priority without Human input. |
+| Status | Claude, Codex, Copilot | Read/Write | When scoped by the user, agents may move active work among `In Progress`, `Review`, and `Blocked`. Agents may recommend `Ready`, but Human owners approve `Ready` transitions. |
+| Implementation Order | Claude, Codex, Copilot | Read | Use for sequencing context only; do not autonomously reorder work. |
+| Blocked By | Claude, Codex, Copilot | Read/Write | Record concrete blockers with repo-qualified issue references where possible, but keep the canonical blocking reason or link in the issue body or comments as required by [issue-lane-policy.md](../issue-lane-policy.md#lane-and-status-definitions). |
+| Release Gate | Claude, Codex, Copilot | Read | Use to understand milestone pressure, not to broaden scope. |
+| Validation Command | Codex | Read/Write | Keep aligned with repo-local validation actually run or required. |
+| Agent | Claude, Codex, Copilot | Write | Record the current execution or review owner when helpful. |
+| Last Reviewed | Claude, Codex, Copilot | Write | Update when triage, implementation, or review materially refreshes the issue state. |
+| Confidence | Claude, Codex, Copilot | Read/Write | Lower confidence when acceptance criteria, dependencies, or docs are unclear. |
+| Implementation Readiness | Claude, Codex, Copilot | Read/Write | Use `needs-clarification` when issue scope is not safe to implement yet. |
+| Scope Risk | Claude, Codex, Copilot | Read/Write | Raise to `high` when cross-repo drift or scope expansion is likely. |
+| Workstream | Claude, Codex, Copilot | Read | Use for scope context only; do not autonomously change it. |
+
+Deferred and `Do Not Implement Yet` states must not be self-promoted by agents. See [issue-lane-policy.md#ai-agent-instructions](../issue-lane-policy.md#ai-agent-instructions).
+
+## Triage Cadence and Stale Issue Handling
+
+Review the project at least weekly during MVP work, and more often when a hosted demo or customer-pilot milestone is active. Human owners should handle Inbox classification, milestone fit, lane assignment, and any state changes that would promote deferred work or change buyer-facing scope.
+
+Inbox triage should confirm the repo, Phase, Lane, Project Priority, Release Gate, and whether a concrete validation command or blocker is already known. If the issue is not implementation-ready, set `Implementation Readiness` to `needs-clarification` or move the issue to `Blocked`, `Deferred`, or `Do Not Implement Yet` instead of letting agents infer scope.
+
+Treat stale issues as review debt, not silent backlog drift. If `Last Reviewed` is older than the team cadence, re-check scope, blockers, and milestone relevance. Deferred issues re-enter active work only through the promotion path documented in [issue-lane-policy.md](../issue-lane-policy.md).
 
 ## UI Workflows
 
