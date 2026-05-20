@@ -76,10 +76,12 @@ When a label and a Project field disagree on status, phase, or priority, the Pro
 
 Milestones set buyer-facing checkpoints, while Release Gate and Phase fields control per-issue sequencing inside the project.
 
+Milestone naming and release-tag conventions are defined in [Milestone and release tag strategy](milestone-and-release-tag-strategy.md).
+
 | Milestone | Scope summary | Authority doc |
 |---|---|---|
-| Local MVP | Deterministic local two-service demo readiness and buyer-readable control outcomes. | [mvp-sellable-completion-gate.md](mvp-sellable-completion-gate.md) |
-| Hosted Demo | Hosted buyer-facing checkpoint after local MVP proof and supporting docs/site gates. | [mvp-sellable-completion-gate.md](mvp-sellable-completion-gate.md) |
+| Local MVP | Deterministic local two-service demo readiness and buyer-readable control outcomes. | [mvp-sellable-completion-gate.md](mvp-sellable-completion-gate.md), [milestone-and-release-tag-strategy.md](milestone-and-release-tag-strategy.md) |
+| Hosted Demo | Hosted buyer-facing checkpoint after local MVP proof and supporting docs/site gates. | [mvp-sellable-completion-gate.md](mvp-sellable-completion-gate.md), [milestone-and-release-tag-strategy.md](milestone-and-release-tag-strategy.md) |
 | Customer Pilot | Customer-facing readiness after hosted-demo blockers are cleared or explicitly accepted. | [mvp-dependency-map.md](../project/mvp-dependency-map.md) |
 | Post-MVP | Approved follow-on work outside the sellable MVP gate. | [issue-lane-policy.md](../issue-lane-policy.md) |
 | Deferred | Parked work that remains valid but not implementation-ready. | [issue-lane-policy.md](../issue-lane-policy.md) |
@@ -198,6 +200,7 @@ Automation must not mutate Status, Lane, or Project Priority without human revie
 - [github-label-taxonomy.md](github-label-taxonomy.md)
 - [mvp-dependency-map.md](../project/mvp-dependency-map.md)
 - [mvp-sellable-completion-gate.md](mvp-sellable-completion-gate.md)
+- [Milestone and release tag strategy](milestone-and-release-tag-strategy.md)
 - [agent-workflow-wrappers.md](../agent-workflow-wrappers.md)
 - [branch-protection-and-merge-policy.md](branch-protection-and-merge-policy.md)
 - [pr-quality-gates.md](pr-quality-gates.md)
