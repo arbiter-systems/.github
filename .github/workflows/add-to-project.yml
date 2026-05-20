@@ -17,5 +17,5 @@ jobs:
     steps:
       - uses: actions/add-to-project@v1.0.2
         with:
-          project-url: https://github.com/orgs/arbiter-systems/projects/<PROJECT_NUMBER>
+          project-url: https://github.com/orgs/arbiter-systems/projects/2
           github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
