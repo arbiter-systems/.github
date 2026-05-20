@@ -144,6 +144,8 @@ Treat stale issues as review debt, not silent backlog drift. If `Last Reviewed` 
 
 ## UI Workflows
 
+These workflows stay in the GitHub Project UI because they require human ownership, judgment, or approval.
+
 - Inbox triage
 - Lane assignment
 - Status transitions requiring human approval, including Ready, Deferred, and Do Not Implement Yet
@@ -151,6 +153,8 @@ Treat stale issues as review debt, not silent backlog drift. If `Last Reviewed` 
 - Last Reviewed updates on stale issues
 
 ## Automation Boundary
+
+Automation may support repeatable audits, reports, and dry runs, but it must not silently mutate execution-governing Project fields.
 
 - Adding new issues to the project
 - Bulk field audits
