@@ -1,0 +1,51 @@
+name: Sync Blocked By
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run in dry-run mode"
+        type: choice
+        required: true
+        default: "true"
+        options:
+          - "true"
+          - "false"
+      target_repo:
+        description: "Optional repo slug filter (e.g., control-plane-api or arbiter-systems/control-plane-api)"
+        type: string
+        required: false
+      update_status_blocked:
+        description: "Allow Status -> Blocked updates"
+        type: choice
+        required: true
+        default: "false"
+        options:
+          - "true"
+          - "false"
+  schedule:
+    - cron: "0 4 * * *"
+
+concurrency:
+  group: sync-blocked-by
+  cancel-in-progress: false
+
+jobs:
+  sync-blocked-by:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
+      GH_ORG: ${{ github.repository_owner }}
+      GH_PROJECT_NUM: ${{ vars.ARBITER_PROJECT_NUM }}
+      DRY_RUN: ${{ inputs.dry_run || 'true' }}
+      TARGET_REPO: ${{ inputs.target_repo || '' }}
+      UPDATE_STATUS_BLOCKED: ${{ inputs.update_status_blocked || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Sync Project Blocked By
+        run: node scripts/sync-blocked-by.mjs
