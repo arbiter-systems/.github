@@ -47,6 +47,10 @@ Keep responses concise and task-scoped.
 
 See [agent-capability-model](docs/operations/agent-capability-model.md) for the full capability policy.
 
+## Controlled Files
+
+See [controlled-file-policy](docs/operations/controlled-file-policy.md) for controlled path categories and review requirements.
+
 Current tool roles:
 - Codex: implementation, tests, build/test iteration, PR-ready changes.
 - Claude: architecture, issue refinement, scope control, diff review.
