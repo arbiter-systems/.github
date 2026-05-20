@@ -1,0 +1,10 @@
+# Local agent/tool settings
+.claude/settings.local.json
+
+# Local editor settings
+.vscode/
+.idea/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
