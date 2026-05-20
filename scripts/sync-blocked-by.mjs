@@ -81,10 +81,10 @@ function parseRequiredEnv(env) {
 
 function isBlockedHeaderLine(line) {
   return (
-    /^\s*##\s+Blocked by\s*:?\s*$/i.test(line) ||
-    /^\s*###\s+Blocked by\s*:?\s*$/i.test(line) ||
-    /^\s*\*\*Blocked by:\*\*\s*$/i.test(line) ||
-    /^\s*Blocked by:\s*$/i.test(line)
+    /^##\s+Blocked by\s*:?\s*$/i.test(line) ||
+    /^###\s+Blocked by\s*:?\s*$/i.test(line) ||
+    /^\*\*Blocked by:\*\*\s*$/i.test(line) ||
+    /^Blocked by:\s*$/i.test(line)
   );
 }
 
@@ -359,6 +359,9 @@ function runSelfTests() {
   result = parseBlockedBy("Blocked by:\n- #9", repo, null);
   assert.equal(result.found, true);
   assert.deepEqual(result.refs, ["arbiter-systems/control-plane-api#9"]);
+
+  result = parseBlockedBy(" Blocked by:\n- #9", repo, null);
+  assert.equal(result.found, false);
 
   result = parseBlockedBy("Blocked by:\n- #7", repo, "arbiter-systems/.github");
   assert.equal(result.found, true);
@@ -645,6 +648,7 @@ async function main() {
   let skippedCount = 0;
   let warningCount = 0;
 
+  // Project scale is currently small, so writes are one mutation per updated issue with no backoff.
   for (const issue of issues) {
     totalIssueItems += 1;
     const issueKey = `${issue.repo}#${issue.number}`;
@@ -664,7 +668,7 @@ async function main() {
 
     const shouldClearBlockedBy = parsed.refs.length === 0;
     const nextBlockedBy = shouldClearBlockedBy ? "" : formatBlockedByValue(parsed.refs, current.blockedBy);
-    const blockedByChanged = nextBlockedBy !== current.blockedBy;
+    const blockedByChanged = nextBlockedBy !== current.blockedBy.trim().toLowerCase();
     let statusChanged = false;
 
     if (config.dryRun) {

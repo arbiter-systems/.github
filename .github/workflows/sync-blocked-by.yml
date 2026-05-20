@@ -33,6 +33,7 @@ concurrency:
 jobs:
   sync-blocked-by:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     env:
@@ -47,5 +48,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - name: Self-test
+        run: node scripts/sync-blocked-by.mjs --self-test
       - name: Sync Project Blocked By
         run: node scripts/sync-blocked-by.mjs
