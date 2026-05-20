@@ -43,6 +43,10 @@ Keep all content public-safe.
 
 Keep responses concise and task-scoped.
 
+## Capability Model
+
+See [agent-capability-model](docs/operations/agent-capability-model.md) for the full capability policy.
+
 Current tool roles:
 - Codex: implementation, tests, build/test iteration, PR-ready changes.
 - Claude: architecture, issue refinement, scope control, diff review.
