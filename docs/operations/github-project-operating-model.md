@@ -158,7 +158,7 @@ These workflows stay in the GitHub Project UI because they require human ownersh
 
 Automation may support repeatable audits, reports, and dry runs, but it must not silently mutate execution-governing Project fields.
 
-- Adding new issues to the project
+- Adding new and reopened issues and pull requests to the project through the repository-level `add-to-project.yml` workflow
 - Bulk field audits
 - Staleness reports
 - Label-sync dry runs
