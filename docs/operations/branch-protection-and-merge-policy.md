@@ -149,6 +149,7 @@ Future automation can apply this policy more consistently after repository workf
 
 Potential future work:
 
+- Organization ruleset planning is documented in [Organization rulesets](organization-rulesets.md).
 - GitHub ruleset automation.
 - Required status check enforcement.
 - CODEOWNERS.
