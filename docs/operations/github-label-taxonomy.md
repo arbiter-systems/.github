@@ -10,6 +10,8 @@ Arbiter Systems repositories use a shared GitHub label taxonomy so backlog triag
 
 Labels are used for taxonomy, ownership routing, search and filter helpers, and lightweight automation triggers. They help teams classify work consistently across repositories without becoming the execution system of record.
 
+Lane/status helper labels, when used, are governed by the [lane policy](../issue-lane-policy.md) and must not override GitHub Project fields.
+
 ### Role of GitHub Project Fields
 
 GitHub Project fields are the operational source of truth for execution management. The [GitHub Project operating model](github-project-operating-model.md) defines how execution state, sequencing, blockers, readiness, confidence, and cross-cutting work context are managed through Project fields rather than labels.
@@ -49,7 +51,7 @@ The following values are already represented by named Project fields, and adding
 - `confidence:low`
 - `implementation-readiness:ready`
 - `implementation-readiness:not-ready`
-- `release-gate:no`
+- `release-gate:none`
 - `release-gate:local-mvp`
 - `validation-command:*`
 - `workstream:*`

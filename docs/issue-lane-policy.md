@@ -79,11 +79,13 @@ This policy expects these lane and status labels:
 
 If these labels are not present in a repository, treat them as expected label names only. Do not create, synchronize, or modify labels as part of this policy issue.
 
+This policy uses the legacy helper-label format `lane: value` and `status: value`. Canonical taxonomy labels use slash-form families such as `type/*`.
+
 ### Label vs. Project Field Conflict Resolution
 
 - If a label and the corresponding GitHub Project field disagree, treat the Project field as authoritative.
 - Update the stale label during triage or label-cleanup work.
-- Leave an issue comment when the label cleanup affects implementation eligibility, such as moving work from deferred to active scope or from not-ready to ready.
+- A human or agent should leave an issue comment when label cleanup affects implementation eligibility, such as moving work from deferred to active scope or from not-ready to ready.
 - Label cleanup does not by itself authorize implementation if the Project field still says the issue is deferred, blocked, not ready, or otherwise not eligible.
 
 ## Promotion Process

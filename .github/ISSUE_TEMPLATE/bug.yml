@@ -1,0 +1,85 @@
+name: Bug
+description: Report a defect or regression in Arbiter Systems repositories.
+title: "fix: "
+labels: ["type/bug"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What user-visible or system outcome should be restored?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is in scope to fix in this issue?
+    validations:
+      required: true
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals
+      description: What is explicitly out of scope?
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      description: Define the conditions for completion.
+      value: |
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation
+      description: Codex-ready validation commands or evidence that should be produced.
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: |
+        ## Suggested labels
+
+        Labels must come from the canonical taxonomy: ../../docs/operations/github-label-taxonomy.md
+
+        Canonical label families:
+        - type/*
+        - priority/*
+        - phase/*
+        - area/*
+        - component/*
+
+        Do not create labels for Project field values; see the label taxonomy for the boundary between labels and Project fields.
+  - type: markdown
+    attributes:
+      value: |
+        ## Suggested Project fields
+
+        Project fields are managed in the Arbiter GitHub Project and are not represented as labels. See: ../../docs/operations/github-project-operating-model.md
+
+        - Status:
+        - Implementation Order:
+        - Lane:
+        - Blocked By:
+        - Release Gate:
+        - Validation Command:
+        - Agent:
+        - Last Reviewed:
+        - Confidence:
+        - Implementation Readiness:
+        - Scope Risk:
+        - Project Priority:
+        - Phase:
+        - Workstream:
+  - type: textarea
+    id: follow_ups
+    attributes:
+      label: Follow-up issues
+      description: Capture deferred work discovered during implementation instead of expanding this issue.
+    validations:
+      required: false
