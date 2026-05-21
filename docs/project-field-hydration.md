@@ -7,9 +7,61 @@ This workflow hydrates GitHub Project v2 fields for newly created or edited issu
 ## Workflow
 
 - File: `.github/workflows/project-field-hydration.yml`
-- Triggers: `issues` events (`opened`, `edited`, `labeled`)
-- Script: `scripts/hydrate-project-fields.js`
+- Reusable workflow: `.github/workflows/project-field-hydration-reusable.yml`
+- Triggers: `issues` events (`opened`, `edited`, `labeled`, `transferred`) and manual `workflow_dispatch`
+- Script: `scripts/hydrate-project-fields.cjs`
 - Default target project: `arbiter-systems/2` (override with metadata or `PROJECT_AUTOMATION_PROJECT`)
+
+## Cross-Repository Hydration
+
+Workflows in the special `.github` repository are not automatically inherited by other repositories. Repositories that need issue Project field hydration must define a local caller workflow.
+
+The shared reusable workflow is:
+
+```text
+arbiter-systems/.github/.github/workflows/project-field-hydration-reusable.yml
+```
+
+Each participating repository should add:
+
+```text
+.github/workflows/project-field-hydration.yml
+```
+
+Caller workflow template:
+
+```yaml
+name: Project Field Hydration
+
+on:
+  issues:
+    types: [opened, edited, labeled]
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  hydrate-project-fields:
+    uses: arbiter-systems/.github/.github/workflows/project-field-hydration-reusable.yml@main
+    with:
+      repo: ${{ github.repository }}
+      issue_number: ${{ github.event.issue.number }}
+      project: arbiter-systems/2
+      dry_run: "false"
+    secrets: inherit
+```
+
+Hidden metadata values must match GitHub Project field option values, not label taxonomy values.
+
+Validation steps:
+
+1. Merge the reusable workflow in `.github`.
+2. Add the caller workflow to a product repo.
+3. Edit or open an issue in that product repo with a valid metadata block.
+4. Confirm the repo-local workflow runs.
+5. Confirm the issue is added to `arbiter-systems/2` if missing.
+6. Confirm Project fields hydrate correctly.
 
 ## Hidden Metadata Block
 
@@ -27,7 +79,7 @@ implementation_readiness: ready
 scope_risk: medium
 confidence: high
 agent: Codex
-workstream: MVP Execution
+workstream: repo-operations
 validation_command: manual review only
 blocked_by:
 implementation_order:
@@ -68,7 +120,7 @@ Allowed metadata values:
 - `scope_risk`: `low`, `medium`, `high`
 - `confidence`: `high`, `medium`, `low`
 - `agent`: `none`, `Codex`, `Claude`, `Copilot`, `mixed`
-- `workstream`: `GitHub Project Management`, `MVP Execution`, `Security & Compliance`, `Documentation & Site`, `Infrastructure & Ops`
+- `workstream`: `execution`, `observability`, `resilience`, `policy-governance`, `security-privacy`, `cost-control`, `demo-readiness`, `console`, `site-docs`, `repo-operations`, `architecture`
 
 `Project Priority` uses `High` / `Medium` / `Low` values, not `P1` / `P2` / `P3`.
 
@@ -116,9 +168,10 @@ Workflow Actions secrets:
 
 - `PROJECT_AUTOMATION_PRIVATE_KEY`
 
-Optional workflow Actions variable:
+Optional workflow Actions variables:
 
-- `PROJECT_AUTOMATION_PROJECT` (defaults to `arbiter-systems/2` in workflow)
+- `PROJECT_AUTOMATION_PROJECT` (defaults to `arbiter-systems/2`)
+- `PROJECT_FIELD_HYDRATION_DRY_RUN` (`true` or `false`)
 
 The script uses GitHub App authentication. It does not rely on `GITHUB_TOKEN` for org-level Project v2 mutation.
 
@@ -134,11 +187,21 @@ In workflow:
 
 - Set repository or organization variable `PROJECT_FIELD_HYDRATION_DRY_RUN=true` to force dry-run.
 
-Local script shape:
+Local script shape using an issue event payload:
 
 ```bash
-node scripts/hydrate-project-fields.js \
+node scripts/hydrate-project-fields.cjs \
   --event-path /path/to/issues-event.json \
+  --dry-run true \
+  --project arbiter-systems/2
+```
+
+Local script shape using direct issue args:
+
+```bash
+node scripts/hydrate-project-fields.cjs \
+  --repo arbiter-systems/control-plane-api \
+  --issue-number 337 \
   --dry-run true \
   --project arbiter-systems/2
 ```
@@ -154,11 +217,52 @@ Expected dry-run behavior:
 1. Create or reuse a GitHub App with org installation access.
 2. Grant the App permissions to read issues and read/write organization Project v2 items.
 3. Install the App on `arbiter-systems`.
-4. Set repository (or organization) variable:
+4. Set repository or organization variable:
    - `PROJECT_AUTOMATION_APP_ID`
-5. Set repository (or organization) secret:
+5. Set repository or organization secret:
    - `PROJECT_AUTOMATION_PRIVATE_KEY`
-6. Optionally set repository (or organization) variables:
+6. Optionally set repository or organization variables:
    - `PROJECT_AUTOMATION_PROJECT` (default `arbiter-systems/2`)
    - `PROJECT_FIELD_HYDRATION_DRY_RUN` (`true` or `false`)
 7. Open or edit an issue with labels/metadata and confirm workflow logs decisions and project item ID.
+
+## Product Repo Setup
+
+After the reusable workflow is merged, add the caller workflow to each participating repo:
+
+- `arbiter-systems/control-plane-api`
+- `arbiter-systems/ai-execution-service`
+- `arbiter-systems/arbiter-console`
+- `arbiter-systems/arbiter-site`
+
+Use this path in each repo:
+
+```text
+.github/workflows/project-field-hydration.yml
+```
+
+Use this workflow:
+
+```yaml
+name: Project Field Hydration
+
+on:
+  issues:
+    types: [opened, edited, labeled]
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  hydrate-project-fields:
+    uses: arbiter-systems/.github/.github/workflows/project-field-hydration-reusable.yml@main
+    with:
+      repo: ${{ github.repository }}
+      issue_number: ${{ github.event.issue.number }}
+      project: arbiter-systems/2
+      dry_run: "false"
+    secrets: inherit
+```
+
+Validate by editing an issue in the product repo and confirming the workflow hydrates Project fields.

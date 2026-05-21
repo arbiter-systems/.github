@@ -1,0 +1,72 @@
+name: Project Field Hydration Reusable
+
+on:
+  workflow_call:
+    inputs:
+      repo:
+        description: "Repository containing the issue to hydrate"
+        required: true
+        type: string
+      issue_number:
+        description: "Issue number to hydrate"
+        required: true
+        type: string
+      project:
+        description: "Project reference in org/number format"
+        required: false
+        type: string
+        default: "arbiter-systems/2"
+      dry_run:
+        description: "Run in dry-run mode"
+        required: false
+        type: string
+        default: "false"
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  hydrate-project-fields:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out automation repo
+        uses: actions/checkout@v4
+        with:
+          repository: arbiter-systems/.github
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate hydration env
+        env:
+          PROJECT_AUTOMATION_APP_ID: ${{ vars.PROJECT_AUTOMATION_APP_ID || secrets.PROJECT_AUTOMATION_APP_ID }}
+          PROJECT_AUTOMATION_PRIVATE_KEY: ${{ secrets.PROJECT_AUTOMATION_PRIVATE_KEY }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ -z "${PROJECT_AUTOMATION_APP_ID}" ]; then
+            echo "[error] Missing PROJECT_AUTOMATION_APP_ID variable or secret"
+            exit 1
+          fi
+          if [ -z "${PROJECT_AUTOMATION_PRIVATE_KEY}" ]; then
+            echo "[error] Missing PROJECT_AUTOMATION_PRIVATE_KEY secret"
+            exit 1
+          fi
+          echo "[info] PROJECT_AUTOMATION_APP_ID configured"
+          echo "[info] DRY_RUN=${DRY_RUN}"
+
+      - name: Hydrate project fields
+        env:
+          PROJECT_AUTOMATION_APP_ID: ${{ vars.PROJECT_AUTOMATION_APP_ID || secrets.PROJECT_AUTOMATION_APP_ID }}
+          PROJECT_AUTOMATION_PRIVATE_KEY: ${{ secrets.PROJECT_AUTOMATION_PRIVATE_KEY }}
+        run: >
+          node scripts/hydrate-project-fields.cjs
+          --issue-number "${{ inputs.issue_number }}"
+          --repo "${{ inputs.repo }}"
+          --dry-run "${{ inputs.dry_run }}"
+          --project "${{ inputs.project }}"
