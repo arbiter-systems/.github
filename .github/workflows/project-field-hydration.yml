@@ -6,11 +6,16 @@ on:
       - opened
       - edited
       - labeled
+      - transferred
   workflow_dispatch:
     inputs:
       issue_number:
         description: "Issue number to hydrate (manual runs)"
         required: true
+        type: string
+      repo:
+        description: "Optional owner/repo override for manual runs"
+        required: false
         type: string
       dry_run:
         description: "Run in dry-run mode"
@@ -30,6 +35,8 @@ jobs:
     if: ${{ github.actor != 'github-actions[bot]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      GITHUB_REPOSITORY: ${{ github.repository }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -75,6 +82,6 @@ jobs:
         run: >
           node scripts/hydrate-project-fields.js
           --issue-number "${{ inputs.issue_number }}"
-          --repo "${GITHUB_REPOSITORY}"
+          --repo "${{ inputs.repo || env.GITHUB_REPOSITORY }}"
           --dry-run "${DRY_RUN}"
           --project "${PROJECT_AUTOMATION_PROJECT}"

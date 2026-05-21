@@ -11,9 +11,9 @@ const DEFAULT_PROJECT_REF = "arbiter-systems/2";
 
 const SUPPORTED_METADATA_KEYS = new Set([
   "project",
+  "repo",
   "status",
   "lane",
-  "priority",
   "project_priority",
   "phase",
   "release_gate",
@@ -56,14 +56,11 @@ const FIELD_CONFIG = {
   project_priority: {
     type: "single-select",
     required: true,
-    candidates: ["Project Priority", "Priority"],
+    candidates: ["Project Priority"],
     values: {
       high: "High",
       medium: "Medium",
       low: "Low",
-      p1: "High",
-      p2: "Medium",
-      p3: "Low",
     },
   },
   phase: {
@@ -250,11 +247,7 @@ function parseProjectRef(value) {
 }
 
 function canonicalMetadataKey(key) {
-  const normalized = normalizeName(key);
-  if (normalized === "priority") {
-    return "project_priority";
-  }
-  return normalized;
+  return normalizeName(key);
 }
 
 function parseMetadataBlock(body) {
@@ -334,9 +327,6 @@ function mapLabelsToFieldHints(labels) {
   }
 
   const statusMatches = [];
-  if (normalized.has("ready") || normalized.has("status: ready")) {
-    statusMatches.push("Ready");
-  }
   if (normalized.has("blocked") || normalized.has("status: blocked")) {
     statusMatches.push("Blocked");
   }
@@ -587,8 +577,7 @@ function normalizeConfiguredValue(key, rawValue) {
   const normalizedInput = normalizeName(rawValue);
   const mapped = config.values?.[normalizedInput];
   if (!mapped) {
-    const allowed = Object.values(config.values || {}).join(", ");
-    throw new Error(`[error] Unsupported value '${rawValue}' for '${key}'. Allowed values: ${allowed}`);
+    return null;
   }
   return mapped;
 }
@@ -597,7 +586,7 @@ function getSingleSelectOptionId(field, desiredValue) {
   const normalizedDesired = normalizeName(desiredValue);
   const option = (field?.options || []).find((entry) => normalizeName(entry?.name) === normalizedDesired);
   if (!option?.id) {
-    throw new Error(`[error] Unknown option '${desiredValue}' for field '${field?.name || "unknown"}'`);
+    return null;
   }
   return option.id;
 }
@@ -721,6 +710,12 @@ function planHydration(metadata, labelHints, currentByField, fields) {
     }
 
     const normalizedValue = normalizeConfiguredValue(candidate.key, candidate.value);
+    if (normalizedValue == null) {
+      warnings.push(
+        `Unsupported value '${candidate.value}' for '${candidate.key}'; skipping field update`,
+      );
+      continue;
+    }
     const current = currentByField.get(normalizeName(field.name)) || null;
     if (sameValue(config.type, current, normalizedValue)) {
       notes.push(`${field.name} unchanged: value already '${normalizedValue}'`);
@@ -729,6 +724,12 @@ function planHydration(metadata, labelHints, currentByField, fields) {
 
     if (config.type === "single-select") {
       const optionId = getSingleSelectOptionId(field, normalizedValue);
+      if (!optionId) {
+        warnings.push(
+          `Project option '${normalizedValue}' was not found for field '${field.name}'; skipping field update`,
+        );
+        continue;
+      }
       operations.push({
         key: candidate.key,
         fieldId: field.id,
@@ -798,7 +799,11 @@ async function run() {
     console.warn(`[warn] ${warning}`);
   }
   if (metadata.unknownKeys.length > 0) {
-    throw new Error(`[error] Unsupported metadata keys: ${metadata.unknownKeys.join(", ")}`);
+    for (const key of metadata.unknownKeys) {
+      console.warn(
+        `[warn] Unsupported metadata key ignored: '${key}' -- use project_priority instead of priority, or remove unrecognized keys`,
+      );
+    }
   }
 
   const requestedProjectRef =
@@ -1054,9 +1059,9 @@ function runSelfTests() {
     [
       "<!-- arbiter-project",
       "project: arbiter-systems/2",
+      "repo: arbiter-systems/.github",
       "status: Inbox",
       "lane: active-mvp",
-      "priority: High",
       "project_priority: Low",
       "phase: mvp",
       "release_gate: local-mvp",
@@ -1073,6 +1078,8 @@ function runSelfTests() {
   );
   assert.equal(metadata.found, true);
   assert.equal(metadata.values.project, "arbiter-systems/2");
+  assert.equal(metadata.values.repo, "arbiter-systems/.github");
+  assert.equal(metadata.unknownKeys.length, 0);
   assert.equal(metadata.values.status, "Inbox");
   assert.equal(metadata.values.lane, "active-mvp");
   assert.equal(metadata.values.project_priority, "Low");
@@ -1093,16 +1100,12 @@ function runSelfTests() {
   assert.equal(metadata.found, true);
   assert.equal(metadata.warnings.length, 1);
 
-  metadata = parseMetadataBlock("<!-- arbiter-project\nproject_priority: High\npriority: Low\n-->");
-  assert.equal(metadata.values.project_priority, "Low");
+  metadata = parseMetadataBlock("<!-- arbiter-project\npriority: High\n-->");
+  assert.equal(metadata.unknownKeys.includes("priority"), true);
+  assert.equal(metadata.values.project_priority, undefined);
 
   metadata = parseMetadataBlock("<!-- arbiter-project\nunknown_field: value\n-->");
   assert.equal(metadata.unknownKeys.includes("unknown_field"), true);
-  assert.throws(() => {
-    if (metadata.unknownKeys.length > 0) {
-      throw new Error(`[error] Unsupported metadata keys: ${metadata.unknownKeys.join(", ")}`);
-    }
-  }, /Unsupported metadata keys/);
 
   metadata = parseMetadataBlock("<!-- arbiter-project\nphase:\n-->");
   assert.equal(metadata.explicitKeys.has("phase"), false);
@@ -1119,7 +1122,13 @@ function runSelfTests() {
   assert.equal(labels.status, "Blocked");
 
   labels = mapLabelsToFieldHints(["ready"]);
-  assert.equal(labels.status, "Ready");
+  assert.equal(labels.status, null);
+
+  labels = mapLabelsToFieldHints(["status: ready"]);
+  assert.equal(labels.status, null);
+
+  labels = mapLabelsToFieldHints(["triage"]);
+  assert.equal(labels.status, "Triage");
 
   labels = mapLabelsToFieldHints(["priority: high"]);
   assert.equal(labels.priority, "High");
@@ -1284,20 +1293,81 @@ function runSelfTests() {
     /Missing required project fields/,
   );
 
-  assert.throws(
-    () => planHydration(
-      {
-        found: true,
-        values: { project_priority: "Critical" },
-        explicitKeys: new Set(["project_priority"]),
-        warnings: [],
-        unknownKeys: [],
-      },
-      { lane: null, priority: null, status: null, warnings: [] },
-      new Map(),
-      fields,
-    ),
-    /Unsupported value 'Critical'/,
+  plan = planHydration(
+    {
+      found: true,
+      values: { project_priority: "Critical" },
+      explicitKeys: new Set(["project_priority"]),
+      warnings: [],
+      unknownKeys: [],
+    },
+    { lane: null, priority: null, status: null, warnings: [] },
+    new Map(),
+    fields,
+  );
+  assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
+  assert.equal(
+    plan.warnings.some((warning) => warning.includes("Unsupported value 'Critical'")),
+    true,
+  );
+
+  plan = planHydration(
+    {
+      found: true,
+      values: { project_priority: "P1" },
+      explicitKeys: new Set(["project_priority"]),
+      warnings: [],
+      unknownKeys: [],
+    },
+    { lane: null, priority: null, status: null, warnings: [] },
+    new Map(),
+    fields,
+  );
+  assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
+  assert.equal(
+    plan.warnings.some((warning) => warning.includes("Unsupported value 'P1'")),
+    true,
+  );
+
+  plan = planHydration(
+    {
+      found: true,
+      values: { workstream: "MVP Execution" },
+      explicitKeys: new Set(["workstream"]),
+      warnings: [],
+      unknownKeys: [],
+    },
+    { lane: null, priority: null, status: null, warnings: [] },
+    new Map(),
+    fields.filter((field) => field.name !== "Workstream"),
+  );
+  assert.equal(plan.operations.some((op) => op.key === "workstream"), false);
+  assert.equal(
+    plan.warnings.some((warning) => warning.includes("Optional project field for 'workstream'")),
+    true,
+  );
+
+  const missingOptionFields = fields.map((field) =>
+    field.name === "Project Priority"
+      ? { ...field, options: [{ id: "o-medium", name: "Medium" }] }
+      : field,
+  );
+  plan = planHydration(
+    {
+      found: true,
+      values: { project_priority: "High" },
+      explicitKeys: new Set(["project_priority"]),
+      warnings: [],
+      unknownKeys: [],
+    },
+    { lane: null, priority: null, status: null, warnings: [] },
+    new Map(),
+    missingOptionFields,
+  );
+  assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
+  assert.equal(
+    plan.warnings.some((warning) => warning.includes("Project option 'High' was not found")),
+    true,
   );
 
   console.log("[self-test] ok");
