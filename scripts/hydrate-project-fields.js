@@ -196,6 +196,8 @@ function parseArgs(argv) {
     dryRun: null,
     eventPath: "",
     projectRef: "",
+    issueNumber: null,
+    repoFullName: "",
     selfTest: false,
   };
 
@@ -217,6 +219,16 @@ function parseArgs(argv) {
     }
     if (arg === "--project") {
       args.projectRef = argv[i + 1] || "";
+      i += 1;
+      continue;
+    }
+    if (arg === "--issue-number") {
+      args.issueNumber = argv[i + 1] || "";
+      i += 1;
+      continue;
+    }
+    if (arg === "--repo") {
+      args.repoFullName = argv[i + 1] || "";
       i += 1;
       continue;
     }
@@ -444,6 +456,39 @@ async function getInstallationToken(appId, privateKey, org) {
   }
 
   return accessToken.token;
+}
+
+async function fetchIssueByNumber(token, repoFullName, issueNumber) {
+  const match = String(repoFullName || "").trim().match(/^([^/]+)\/([^/]+)$/);
+  if (!match) {
+    throw new Error("[error] --repo must be in owner/repo format");
+  }
+  if (!/^\d+$/.test(String(issueNumber || "").trim())) {
+    throw new Error("[error] --issue-number must be a positive integer");
+  }
+
+  const owner = match[1];
+  const repo = match[2];
+  const number = Number(issueNumber);
+  const issue = await httpJson({
+    method: "GET",
+    url: `${GITHUB_API_URL}/repos/${owner}/${repo}/issues/${number}`,
+    token,
+  });
+
+  if (!issue?.node_id) {
+    throw new Error("[error] Issue lookup failed: missing node_id");
+  }
+
+  return {
+    action: "workflow_dispatch",
+    issueNodeId: issue.node_id,
+    issueNumber: Number(issue.number || number),
+    issueBody: String(issue.body || ""),
+    labels: Array.isArray(issue.labels) ? issue.labels : [],
+    repoFullName: `${owner}/${repo}`,
+    repoOwner: owner,
+  };
 }
 
 function loadIssueEvent(filePath) {
@@ -719,8 +764,30 @@ async function run() {
   }
 
   const dryRun = parseDryRun(args.dryRun != null ? args.dryRun : process.env.DRY_RUN);
-  const eventPath = args.eventPath || process.env.GITHUB_EVENT_PATH || "";
-  const event = loadIssueEvent(eventPath);
+  const fallbackProjectRef = args.projectRef || process.env.PROJECT_AUTOMATION_PROJECT || DEFAULT_PROJECT_REF;
+  const fallbackProject = parseProjectRef(fallbackProjectRef);
+
+  const appId = String(process.env.PROJECT_AUTOMATION_APP_ID || "").trim();
+  if (!appId) {
+    throw new Error("[error] PROJECT_AUTOMATION_APP_ID is required");
+  }
+  const privateKeyRaw = String(process.env.PROJECT_AUTOMATION_PRIVATE_KEY || "").trim();
+  if (!privateKeyRaw) {
+    throw new Error("[error] PROJECT_AUTOMATION_PRIVATE_KEY is required");
+  }
+  const privateKey = privateKeyRaw.replace(/\\n/g, "\n");
+
+  let token = await getInstallationToken(appId, privateKey, fallbackProject.org);
+
+  let event;
+  if (args.issueNumber) {
+    const repoFullName = args.repoFullName || process.env.GITHUB_REPOSITORY || "";
+    event = await fetchIssueByNumber(token, repoFullName, args.issueNumber);
+  } else {
+    const eventPath = args.eventPath || process.env.GITHUB_EVENT_PATH || "";
+    event = loadIssueEvent(eventPath);
+  }
+
   const metadata = parseMetadataBlock(event.issueBody);
   const labelHints = mapLabelsToFieldHints(event.labels);
 
@@ -735,22 +802,11 @@ async function run() {
   }
 
   const requestedProjectRef =
-    metadata.explicitKeys.has("project") && metadata.values.project
-      ? metadata.values.project
-      : args.projectRef || process.env.PROJECT_AUTOMATION_PROJECT || DEFAULT_PROJECT_REF;
+    metadata.explicitKeys.has("project") && metadata.values.project ? metadata.values.project : fallbackProjectRef;
   const targetProject = parseProjectRef(requestedProjectRef);
-
-  const appId = String(process.env.PROJECT_AUTOMATION_APP_ID || "").trim();
-  if (!appId) {
-    throw new Error("[error] PROJECT_AUTOMATION_APP_ID is required");
+  if (normalizeName(targetProject.org) !== normalizeName(fallbackProject.org)) {
+    token = await getInstallationToken(appId, privateKey, targetProject.org);
   }
-  const privateKeyRaw = String(process.env.PROJECT_AUTOMATION_PRIVATE_KEY || "").trim();
-  if (!privateKeyRaw) {
-    throw new Error("[error] PROJECT_AUTOMATION_PRIVATE_KEY is required");
-  }
-  const privateKey = privateKeyRaw.replace(/\\n/g, "\n");
-
-  const token = await getInstallationToken(appId, privateKey, targetProject.org);
 
   const projectMetaQuery = `
     query ProjectMeta($org: String!, $number: Int!) {

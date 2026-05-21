@@ -6,6 +6,20 @@ on:
       - opened
       - edited
       - labeled
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to hydrate (manual runs)"
+        required: true
+        type: string
+      dry_run:
+        description: "Run in dry-run mode"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
 
 permissions:
   contents: read
@@ -26,7 +40,7 @@ jobs:
           PROJECT_AUTOMATION_APP_ID: ${{ vars.PROJECT_AUTOMATION_APP_ID || secrets.PROJECT_AUTOMATION_APP_ID }}
           PROJECT_AUTOMATION_PRIVATE_KEY: ${{ secrets.PROJECT_AUTOMATION_PRIVATE_KEY }}
           PROJECT_AUTOMATION_PROJECT: ${{ vars.PROJECT_AUTOMATION_PROJECT || 'arbiter-systems/2' }}
-          DRY_RUN: ${{ vars.PROJECT_FIELD_HYDRATION_DRY_RUN || 'false' }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || vars.PROJECT_FIELD_HYDRATION_DRY_RUN || 'false' }}
         run: |
           if [ -z "${PROJECT_AUTOMATION_APP_ID}" ]; then
             echo "[error] Missing PROJECT_AUTOMATION_APP_ID variable"
@@ -39,14 +53,28 @@ jobs:
           echo "[info] PROJECT_AUTOMATION_APP_ID configured"
           echo "[info] PROJECT_AUTOMATION_PROJECT=${PROJECT_AUTOMATION_PROJECT}"
           echo "[info] DRY_RUN=${DRY_RUN}"
-      - name: Hydrate project fields
+      - name: Hydrate project fields (issues trigger)
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         env:
           PROJECT_AUTOMATION_APP_ID: ${{ vars.PROJECT_AUTOMATION_APP_ID || secrets.PROJECT_AUTOMATION_APP_ID }}
           PROJECT_AUTOMATION_PRIVATE_KEY: ${{ secrets.PROJECT_AUTOMATION_PRIVATE_KEY }}
           PROJECT_AUTOMATION_PROJECT: ${{ vars.PROJECT_AUTOMATION_PROJECT || 'arbiter-systems/2' }}
-          DRY_RUN: ${{ vars.PROJECT_FIELD_HYDRATION_DRY_RUN || 'false' }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || vars.PROJECT_FIELD_HYDRATION_DRY_RUN || 'false' }}
         run: >
           node scripts/hydrate-project-fields.js
           --event-path "${GITHUB_EVENT_PATH}"
+          --dry-run "${DRY_RUN}"
+          --project "${PROJECT_AUTOMATION_PROJECT}"
+      - name: Hydrate project fields (manual dispatch)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          PROJECT_AUTOMATION_APP_ID: ${{ vars.PROJECT_AUTOMATION_APP_ID || secrets.PROJECT_AUTOMATION_APP_ID }}
+          PROJECT_AUTOMATION_PRIVATE_KEY: ${{ secrets.PROJECT_AUTOMATION_PRIVATE_KEY }}
+          PROJECT_AUTOMATION_PROJECT: ${{ vars.PROJECT_AUTOMATION_PROJECT || 'arbiter-systems/2' }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || vars.PROJECT_FIELD_HYDRATION_DRY_RUN || 'false' }}
+        run: >
+          node scripts/hydrate-project-fields.js
+          --issue-number "${{ inputs.issue_number }}"
+          --repo "${GITHUB_REPOSITORY}"
           --dry-run "${DRY_RUN}"
           --project "${PROJECT_AUTOMATION_PROJECT}"
