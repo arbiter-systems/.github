@@ -1550,7 +1550,7 @@ async function main() {
   }
 }
 
-await main();
+main();
 
 module.exports = {
   mapLabelsToFieldHints,
