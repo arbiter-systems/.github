@@ -16,17 +16,17 @@ jobs:
     if: ${{ github.actor != 'github-actions[bot]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      DRY_RUN: ${{ vars.PROJECT_FIELD_HYDRATION_DRY_RUN || 'false' }}
-      PROJECT_AUTOMATION_PROJECT: ${{ vars.PROJECT_AUTOMATION_PROJECT || 'arbiter-systems/2' }}
-      PROJECT_AUTOMATION_APP_ID: ${{ vars.PROJECT_AUTOMATION_APP_ID }}
-      PROJECT_AUTOMATION_PRIVATE_KEY: ${{ secrets.PROJECT_AUTOMATION_PRIVATE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
       - name: Validate hydration env
+        env:
+          PROJECT_AUTOMATION_APP_ID: ${{ vars.PROJECT_AUTOMATION_APP_ID }}
+          PROJECT_AUTOMATION_PRIVATE_KEY: ${{ secrets.PROJECT_AUTOMATION_PRIVATE_KEY }}
+          PROJECT_AUTOMATION_PROJECT: ${{ vars.PROJECT_AUTOMATION_PROJECT || 'arbiter-systems/2' }}
+          DRY_RUN: ${{ vars.PROJECT_FIELD_HYDRATION_DRY_RUN || 'false' }}
         run: |
           if [ -z "${PROJECT_AUTOMATION_APP_ID}" ]; then
             echo "[error] Missing PROJECT_AUTOMATION_APP_ID variable"
@@ -40,6 +40,11 @@ jobs:
           echo "[info] PROJECT_AUTOMATION_PROJECT=${PROJECT_AUTOMATION_PROJECT}"
           echo "[info] DRY_RUN=${DRY_RUN}"
       - name: Hydrate project fields
+        env:
+          PROJECT_AUTOMATION_APP_ID: ${{ vars.PROJECT_AUTOMATION_APP_ID }}
+          PROJECT_AUTOMATION_PRIVATE_KEY: ${{ secrets.PROJECT_AUTOMATION_PRIVATE_KEY }}
+          PROJECT_AUTOMATION_PROJECT: ${{ vars.PROJECT_AUTOMATION_PROJECT || 'arbiter-systems/2' }}
+          DRY_RUN: ${{ vars.PROJECT_FIELD_HYDRATION_DRY_RUN || 'false' }}
         run: >
           node scripts/hydrate-project-fields.js
           --event-path "${GITHUB_EVENT_PATH}"
