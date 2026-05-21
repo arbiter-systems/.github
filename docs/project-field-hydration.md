@@ -62,12 +62,19 @@ If multiple conflicting lane labels or priority labels are present, inference is
 - Metadata values are treated as explicit and may overwrite existing values for those fields.
 - `--dry-run` performs no mutations.
 
-## Required Secrets and Permissions
+## Required Variables, Secrets, and Permissions
 
-Workflow secrets:
+Workflow Actions variable:
 
 - `PROJECT_AUTOMATION_APP_ID`
+
+Workflow Actions secrets:
+
 - `PROJECT_AUTOMATION_PRIVATE_KEY`
+
+Optional workflow Actions variable:
+
+- `PROJECT_AUTOMATION_PROJECT` (defaults to `arbiter-systems/2` in workflow)
 
 The script uses GitHub App authentication. It does not rely on `GITHUB_TOKEN` for org-level Project v2 mutation.
 
@@ -103,10 +110,11 @@ Expected dry-run behavior:
 1. Create or reuse a GitHub App with org installation access.
 2. Grant the App permissions to read issues and read/write organization Project v2 items.
 3. Install the App on `arbiter-systems`.
-4. Set repository (or organization) secrets:
+4. Set repository (or organization) variable:
    - `PROJECT_AUTOMATION_APP_ID`
+5. Set repository (or organization) secret:
    - `PROJECT_AUTOMATION_PRIVATE_KEY`
-5. Optionally set repository (or organization) variables:
+6. Optionally set repository (or organization) variables:
    - `PROJECT_AUTOMATION_PROJECT` (default `arbiter-systems/2`)
    - `PROJECT_FIELD_HYDRATION_DRY_RUN` (`true` or `false`)
-6. Open or edit an issue with labels/metadata and confirm workflow logs decisions and project item ID.
+7. Open or edit an issue with labels/metadata and confirm workflow logs decisions and project item ID.
