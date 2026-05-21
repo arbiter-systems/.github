@@ -38,9 +38,10 @@ Rules:
 
 - `project` must be `org/number`.
 - Supported keys:
+  - `repo`
   - `status`
   - `lane`
-  - `priority` or `project_priority` (alias to `Project Priority`)
+  - `project_priority`
   - `phase`
   - `release_gate`
   - `implementation_readiness`
@@ -52,7 +53,9 @@ Rules:
   - `blocked_by`
   - `implementation_order`
 - Empty values are treated as "not explicitly supplied."
-- Unknown metadata keys fail the run with a clear error.
+- Unknown metadata keys are ignored with warnings.
+- Unsupported/deprecated key: `priority` is ignored; use `project_priority`.
+- Unsupported/deprecated key: `area` is ignored.
 
 Allowed metadata values:
 
@@ -75,13 +78,15 @@ If a field is not explicitly supplied in metadata, the script can infer:
 
 - `active-mvp` -> `Lane=active-mvp`
 - `lane: deferred` -> `Lane=deferred`
-- `ready` or `status: ready` -> `Status=Ready`
 - `blocked` or `status: blocked` -> `Status=Blocked`
+- `triage` or `status: triage` -> `Status=Triage`
 - `priority: high` -> `Project Priority=High`
 - `priority: medium` -> `Project Priority=Medium`
 - `priority: low` -> `Project Priority=Low`
 
 If multiple conflicting lane, status, or priority labels are present, inference is skipped and a warning is logged.
+
+`Ready` is human-approved and is not inferred from labels by this workflow.
 
 ## Defaults
 
@@ -98,6 +103,7 @@ If multiple conflicting lane, status, or priority labels are present, inference 
 - Metadata values are treated as explicit and may overwrite existing values for those fields.
 - Missing optional Project fields are logged as warnings and skipped.
 - Missing required Project fields fail the run (`Status`, `Lane`, `Project Priority`).
+- Unknown single-select metadata values are logged as warnings and skipped.
 - `--dry-run` performs no mutations.
 
 ## Required Variables, Secrets, and Permissions

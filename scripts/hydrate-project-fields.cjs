@@ -11,9 +11,9 @@ const DEFAULT_PROJECT_REF = "arbiter-systems/2";
 
 const SUPPORTED_METADATA_KEYS = new Set([
   "project",
+  "repo",
   "status",
   "lane",
-  "priority",
   "project_priority",
   "phase",
   "release_gate",
@@ -56,14 +56,11 @@ const FIELD_CONFIG = {
   project_priority: {
     type: "single-select",
     required: true,
-    candidates: ["Project Priority", "Priority"],
+    candidates: ["Project Priority"],
     values: {
       high: "High",
       medium: "Medium",
       low: "Low",
-      p1: "High",
-      p2: "Medium",
-      p3: "Low",
     },
   },
   phase: {
@@ -132,18 +129,24 @@ const FIELD_CONFIG = {
       mixed: "mixed",
     },
   },
-  workstream: {
-    type: "single-select",
-    required: false,
-    candidates: ["Workstream"],
-    values: {
-      "github project management": "GitHub Project Management",
-      "mvp execution": "MVP Execution",
-      "security & compliance": "Security & Compliance",
-      "documentation & site": "Documentation & Site",
-      "infrastructure & ops": "Infrastructure & Ops",
-    },
+workstream: {
+  type: "single-select",
+  required: false,
+  candidates: ["Workstream"],
+  values: {
+    execution: "execution",
+    observability: "observability",
+    resilience: "resilience",
+    "policy-governance": "policy-governance",
+    "security-privacy": "security-privacy",
+    "cost-control": "cost-control",
+    "demo-readiness": "demo-readiness",
+    console: "console",
+    "site-docs": "site-docs",
+    "repo-operations": "repo-operations",
+    architecture: "architecture",
   },
+},
   validation_command: { type: "text", required: false, candidates: ["Validation Command"] },
   blocked_by: { type: "text", candidates: ["Blocked By"] },
   implementation_order: { type: "number", required: false, candidates: ["Implementation Order"] },
@@ -173,7 +176,7 @@ function parseBooleanToken(value) {
 
 function parseTruthy(value) {
   const parsed = parseBooleanToken(value);
-  if (!parsed || !parsed.recognized) {
+  if (!parsed?.recognized) {
     return false;
   }
   return parsed.value;
@@ -230,7 +233,6 @@ function parseArgs(argv) {
     if (arg === "--repo") {
       args.repoFullName = argv[i + 1] || "";
       i += 1;
-      continue;
     }
   }
 
@@ -239,7 +241,7 @@ function parseArgs(argv) {
 
 function parseProjectRef(value) {
   const input = String(value || "").trim();
-  const match = input.match(/^([a-z0-9_.-]+)\/(\d+)$/i);
+  const match = new RegExp(/^([a-z0-9_.-]+)\/(\d+)$/i).exec(input);
   if (!match) {
     throw new Error("[error] Project reference must be in org/number format (example: arbiter-systems/2)");
   }
@@ -250,16 +252,12 @@ function parseProjectRef(value) {
 }
 
 function canonicalMetadataKey(key) {
-  const normalized = normalizeName(key);
-  if (normalized === "priority") {
-    return "project_priority";
-  }
-  return normalized;
+  return normalizeName(key);
 }
 
 function parseMetadataBlock(body) {
   const text = String(body || "");
-  const blockMatch = text.match(/<!--\s*arbiter-project\b([\s\S]*?)-->/i);
+  const blockMatch = new RegExp(/<!--\s*arbiter-project\b([\s\S]*?)-->/i).exec(text);
   if (!blockMatch) {
     return {
       found: false,
@@ -281,7 +279,7 @@ function parseMetadataBlock(body) {
     if (!line) {
       continue;
     }
-    const pairMatch = line.match(/^([a-z_]+)\s*:\s*(.*)$/i);
+    const pairMatch = new RegExp(/^([a-z_]+)\s*:\s*(.*)$/i).exec(line);
     if (!pairMatch) {
       warnings.push(`ignored malformed metadata line: "${line}"`);
       continue;
@@ -334,9 +332,6 @@ function mapLabelsToFieldHints(labels) {
   }
 
   const statusMatches = [];
-  if (normalized.has("ready") || normalized.has("status: ready")) {
-    statusMatches.push("Ready");
-  }
   if (normalized.has("blocked") || normalized.has("status: blocked")) {
     statusMatches.push("Blocked");
   }
@@ -369,7 +364,7 @@ function mapLabelsToFieldHints(labels) {
 }
 
 function base64Url(input) {
-  return Buffer.from(input).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return Buffer.from(input).toString("base64").replaceAll('=', "").replaceAll('+', "-").replaceAll('/', "_");
 }
 
 function createAppJwt(appId, privateKeyPem) {
@@ -459,7 +454,7 @@ async function getInstallationToken(appId, privateKey, org) {
 }
 
 async function fetchIssueByNumber(token, repoFullName, issueNumber) {
-  const match = String(repoFullName || "").trim().match(/^([^/]+)\/([^/]+)$/);
+  const match = new RegExp(/^([^/]+)\/([^/]+)$/).exec(String(repoFullName || "").trim());
   if (!match) {
     throw new Error("[error] --repo must be in owner/repo format");
   }
@@ -587,8 +582,7 @@ function normalizeConfiguredValue(key, rawValue) {
   const normalizedInput = normalizeName(rawValue);
   const mapped = config.values?.[normalizedInput];
   if (!mapped) {
-    const allowed = Object.values(config.values || {}).join(", ");
-    throw new Error(`[error] Unsupported value '${rawValue}' for '${key}'. Allowed values: ${allowed}`);
+    return null;
   }
   return mapped;
 }
@@ -597,7 +591,7 @@ function getSingleSelectOptionId(field, desiredValue) {
   const normalizedDesired = normalizeName(desiredValue);
   const option = (field?.options || []).find((entry) => normalizeName(entry?.name) === normalizedDesired);
   if (!option?.id) {
-    throw new Error(`[error] Unknown option '${desiredValue}' for field '${field?.name || "unknown"}'`);
+    return null;
   }
   return option.id;
 }
@@ -618,155 +612,201 @@ function validateRequiredProjectFields(fields) {
   }
 }
 
-function planHydration(metadata, labelHints, currentByField, fields) {
-  const notes = [];
-  const warnings = [];
-  const candidates = [];
+const EXPLICIT_METADATA_FIELD_KEYS = [
+  "phase",
+  "release_gate",
+  "implementation_readiness",
+  "scope_risk",
+  "confidence",
+  "agent",
+  "workstream",
+  "validation_command",
+  "blocked_by",
+];
 
-  function currentFor(key) {
-    const field = findFieldByCandidates(fields, FIELD_CONFIG[key].candidates);
-    if (!field) {
-      return null;
-    }
-    return currentByField.get(normalizeName(field.name)) || null;
+function getCurrentFieldValue(key, currentByField, fields) {
+  const field = findFieldByCandidates(fields, FIELD_CONFIG[key].candidates);
+  if (!field) {
+    return null;
   }
+  return currentByField.get(normalizeName(field.name)) || null;
+}
 
-  const statusCurrent = currentFor("status");
+function addStatusCandidate(candidates, notes, metadata, labelHints, currentByField, fields) {
+  const statusCurrent = getCurrentFieldValue("status", currentByField, fields);
   if (metadata.explicitKeys.has("status")) {
     candidates.push({ key: "status", value: metadata.values.status, source: "metadata" });
-  } else if (labelHints.status && isEmptyCurrent(statusCurrent)) {
-    candidates.push({ key: "status", value: labelHints.status, source: "label" });
-  } else if (isEmptyCurrent(statusCurrent)) {
-    candidates.push({ key: "status", value: "Inbox", source: "default" });
-  } else {
-    notes.push("Status unchanged: existing value preserved");
+    return;
   }
+  if (labelHints.status && isEmptyCurrent(statusCurrent)) {
+    candidates.push({ key: "status", value: labelHints.status, source: "label" });
+    return;
+  }
+  if (isEmptyCurrent(statusCurrent)) {
+    candidates.push({ key: "status", value: "Inbox", source: "default" });
+    return;
+  }
+  notes.push("Status unchanged: existing value preserved");
+}
 
-  const laneCurrent = currentFor("lane");
+function addLaneCandidate(candidates, notes, metadata, labelHints, currentByField, fields) {
+  const laneCurrent = getCurrentFieldValue("lane", currentByField, fields);
   if (metadata.explicitKeys.has("lane")) {
     candidates.push({ key: "lane", value: metadata.values.lane, source: "metadata" });
-  } else if (labelHints.lane && isEmptyCurrent(laneCurrent)) {
+    return;
+  }
+  if (labelHints.lane && isEmptyCurrent(laneCurrent)) {
     candidates.push({ key: "lane", value: labelHints.lane, source: "label" });
-  } else if (labelHints.lane && !isEmptyCurrent(laneCurrent)) {
+    return;
+  }
+  if (labelHints.lane && !isEmptyCurrent(laneCurrent)) {
     notes.push("Lane unchanged: label inference skipped because value already set");
   }
+}
 
-  const priorityCurrent = currentFor("project_priority");
+function addProjectPriorityCandidate(candidates, notes, metadata, labelHints, currentByField, fields) {
+  const priorityCurrent = getCurrentFieldValue("project_priority", currentByField, fields);
   if (metadata.explicitKeys.has("project_priority")) {
     candidates.push({ key: "project_priority", value: metadata.values.project_priority, source: "metadata" });
-  } else if (labelHints.priority && isEmptyCurrent(priorityCurrent)) {
+    return;
+  }
+  if (labelHints.priority && isEmptyCurrent(priorityCurrent)) {
     candidates.push({ key: "project_priority", value: labelHints.priority, source: "label" });
-  } else if (labelHints.priority && !isEmptyCurrent(priorityCurrent)) {
+    return;
+  }
+  if (labelHints.priority && !isEmptyCurrent(priorityCurrent)) {
     notes.push("Priority unchanged: label inference skipped because value already set");
   }
+}
 
-  if (metadata.explicitKeys.has("phase")) {
-    candidates.push({ key: "phase", value: metadata.values.phase, source: "metadata" });
-  }
-  if (metadata.explicitKeys.has("release_gate")) {
-    candidates.push({ key: "release_gate", value: metadata.values.release_gate, source: "metadata" });
-  }
-  if (metadata.explicitKeys.has("implementation_readiness")) {
-    candidates.push({
-      key: "implementation_readiness",
-      value: metadata.values.implementation_readiness,
-      source: "metadata",
-    });
-  }
-  if (metadata.explicitKeys.has("scope_risk")) {
-    candidates.push({ key: "scope_risk", value: metadata.values.scope_risk, source: "metadata" });
-  }
-  if (metadata.explicitKeys.has("confidence")) {
-    candidates.push({ key: "confidence", value: metadata.values.confidence, source: "metadata" });
-  }
-  if (metadata.explicitKeys.has("agent")) {
-    candidates.push({ key: "agent", value: metadata.values.agent, source: "metadata" });
-  }
-  if (metadata.explicitKeys.has("workstream")) {
-    candidates.push({ key: "workstream", value: metadata.values.workstream, source: "metadata" });
-  }
-  if (metadata.explicitKeys.has("validation_command")) {
-    candidates.push({ key: "validation_command", value: metadata.values.validation_command, source: "metadata" });
-  }
-  if (metadata.explicitKeys.has("blocked_by")) {
-    candidates.push({ key: "blocked_by", value: metadata.values.blocked_by, source: "metadata" });
+function addExplicitMetadataCandidates(candidates, metadata) {
+  for (const key of EXPLICIT_METADATA_FIELD_KEYS) {
+    if (metadata.explicitKeys.has(key)) {
+      candidates.push({ key, value: metadata.values[key], source: "metadata" });
+    }
   }
   if (metadata.explicitKeys.has("implementation_order")) {
     const parsed = Number(metadata.values.implementation_order);
     if (!Number.isFinite(parsed)) {
-      throw new Error(
+      throw new TypeError(
         `[error] implementation_order must be numeric when provided (received '${metadata.values.implementation_order}')`,
       );
     }
     candidates.push({ key: "implementation_order", value: parsed, source: "metadata" });
   }
+}
 
-  const operations = [];
-  for (const candidate of candidates) {
-    const config = FIELD_CONFIG[candidate.key];
-    const field = findFieldByCandidates(fields, config.candidates);
-    if (!field?.id) {
-      if (config.required) {
-        // Fail fast on missing required configured fields so project-schema drift is explicit and reviewable.
-        throw new Error(
-          `[error] Required project field for '${candidate.key}' was not found (looked for: ${config.candidates.join(", ")})`,
-        );
-      }
-      warnings.push(
-        `Optional project field for '${candidate.key}' was not found (looked for: ${config.candidates.join(
-          ", ",
-        )}); skipping`,
-      );
-      continue;
-    }
+function buildHydrationCandidates(metadata, labelHints, currentByField, fields) {
+  const notes = [];
+  const candidates = [];
+  addStatusCandidate(candidates, notes, metadata, labelHints, currentByField, fields);
+  addLaneCandidate(candidates, notes, metadata, labelHints, currentByField, fields);
+  addProjectPriorityCandidate(candidates, notes, metadata, labelHints, currentByField, fields);
+  addExplicitMetadataCandidates(candidates, metadata);
+  return { candidates, notes };
+}
 
-    const normalizedValue = normalizeConfiguredValue(candidate.key, candidate.value);
-    const current = currentByField.get(normalizeName(field.name)) || null;
-    if (sameValue(config.type, current, normalizedValue)) {
-      notes.push(`${field.name} unchanged: value already '${normalizedValue}'`);
-      continue;
-    }
-
-    if (config.type === "single-select") {
-      const optionId = getSingleSelectOptionId(field, normalizedValue);
-      operations.push({
-        key: candidate.key,
-        fieldId: field.id,
-        fieldName: field.name,
-        type: config.type,
-        value: normalizedValue,
-        optionId,
-        source: candidate.source,
-        currentValue: current ? current.value : "",
-      });
-      continue;
-    }
-
-    operations.push({
-      key: candidate.key,
-      fieldId: field.id,
-      fieldName: field.name,
-      type: config.type,
-      value: normalizedValue,
-      source: candidate.source,
-      currentValue: current ? current.value : "",
-    });
+function planMissingField(candidate, config) {
+  if (config.required) {
+    // Fail fast on missing required configured fields so project-schema drift is explicit and reviewable.
+    throw new Error(
+      `[error] Required project field for '${candidate.key}' was not found (looked for: ${config.candidates.join(", ")})`,
+    );
   }
+  return {
+    warning: `Optional project field for '${candidate.key}' was not found (looked for: ${config.candidates.join(
+      ", ",
+    )}); skipping`,
+  };
+}
 
+function buildFieldOperation(candidate, config, field, normalizedValue, current) {
+  return {
+    key: candidate.key,
+    fieldId: field.id,
+    fieldName: field.name,
+    type: config.type,
+    value: normalizedValue,
+    source: candidate.source,
+    currentValue: current ? current.value : "",
+  };
+}
+
+function planSingleSelectOperation(candidate, config, field, normalizedValue, current) {
+  const optionId = getSingleSelectOptionId(field, normalizedValue);
+  if (!optionId) {
+    return {
+      warning: `Unknown single-select option '${normalizedValue}' for field '${field.name}'; skipping`,
+    };
+  }
+  return {
+    operation: {
+      ...buildFieldOperation(candidate, config, field, normalizedValue, current),
+      optionId,
+    },
+  };
+}
+
+function planCandidateOperation(candidate, currentByField, fields) {
+  const config = FIELD_CONFIG[candidate.key];
+  const field = findFieldByCandidates(fields, config.candidates);
+  if (!field?.id) {
+    return planMissingField(candidate, config);
+  }
+  const normalizedValue = normalizeConfiguredValue(candidate.key, candidate.value);
+  if (normalizedValue == null) {
+    const allowed = Object.values(config.values || {}).join(", ");
+    return {
+      warning: `Unknown single-select option '${candidate.value}' for field '${field.name}'; skipping. Allowed values: ${allowed}`,
+    };
+  }
+  const current = currentByField.get(normalizeName(field.name)) || null;
+  if (sameValue(config.type, current, normalizedValue)) {
+    return {
+      note: `${field.name} unchanged: value already '${normalizedValue}'`,
+    };
+  }
+  if (config.type === "single-select") {
+    return planSingleSelectOperation(candidate, config, field, normalizedValue, current);
+  }
+  return {
+    operation: buildFieldOperation(candidate, config, field, normalizedValue, current),
+  };
+}
+
+function buildHydrationOperations(candidates, currentByField, fields) {
+  const operations = [];
+  const notes = [];
+  const warnings = [];
+  for (const candidate of candidates) {
+    const result = planCandidateOperation(candidate, currentByField, fields);
+    if (result.operation) {
+      operations.push(result.operation);
+    }
+    if (result.note) {
+      notes.push(result.note);
+    }
+    if (result.warning) {
+      warnings.push(result.warning);
+    }
+  }
   return { operations, notes, warnings };
 }
 
-async function run() {
-  const args = parseArgs(process.argv);
-  if (args.selfTest) {
-    runSelfTests();
-    return;
-  }
+function planHydration(metadata, labelHints, currentByField, fields) {
+  const candidatePlan = buildHydrationCandidates(metadata, labelHints, currentByField, fields);
+  const operationPlan = buildHydrationOperations(candidatePlan.candidates, currentByField, fields);
+  return {
+    operations: operationPlan.operations,
+    notes: [...candidatePlan.notes, ...operationPlan.notes],
+    warnings: operationPlan.warnings,
+  };
+}
 
-  const dryRun = parseDryRun(args.dryRun != null ? args.dryRun : process.env.DRY_RUN);
+function buildRunContext(args) {
+  const dryRun = parseDryRun(args.dryRun == null ? process.env.DRY_RUN : args.dryRun);
   const fallbackProjectRef = args.projectRef || process.env.PROJECT_AUTOMATION_PROJECT || DEFAULT_PROJECT_REF;
   const fallbackProject = parseProjectRef(fallbackProjectRef);
-
   const appId = String(process.env.PROJECT_AUTOMATION_APP_ID || "").trim();
   if (!appId) {
     throw new Error("[error] PROJECT_AUTOMATION_APP_ID is required");
@@ -775,39 +815,50 @@ async function run() {
   if (!privateKeyRaw) {
     throw new Error("[error] PROJECT_AUTOMATION_PRIVATE_KEY is required");
   }
-  const privateKey = privateKeyRaw.replace(/\\n/g, "\n");
+  return {
+    dryRun,
+    fallbackProjectRef,
+    fallbackProject,
+    appId,
+    privateKey: privateKeyRaw.replaceAll(String.raw`\n`, "\n"),
+  };
+}
 
-  let token = await getInstallationToken(appId, privateKey, fallbackProject.org);
+async function createHydrationAuth(context) {
+  const token = await getInstallationToken(context.appId, context.privateKey, context.fallbackProject.org);
+  return { token };
+}
 
-  let event;
+async function loadHydrationEvent(args, token) {
   if (args.issueNumber) {
     const repoFullName = args.repoFullName || process.env.GITHUB_REPOSITORY || "";
-    event = await fetchIssueByNumber(token, repoFullName, args.issueNumber);
-  } else {
-    const eventPath = args.eventPath || process.env.GITHUB_EVENT_PATH || "";
-    event = loadIssueEvent(eventPath);
+    return fetchIssueByNumber(token, repoFullName, args.issueNumber);
   }
+  const eventPath = args.eventPath || process.env.GITHUB_EVENT_PATH || "";
+  return loadIssueEvent(eventPath);
+}
 
-  const metadata = parseMetadataBlock(event.issueBody);
-  const labelHints = mapLabelsToFieldHints(event.labels);
+function parseHydrationInputs(event) {
+  return {
+    metadata: parseMetadataBlock(event.issueBody),
+    labelHints: mapLabelsToFieldHints(event.labels),
+  };
+}
 
+function emitInputWarnings(metadata, labelHints) {
   for (const warning of metadata.warnings) {
     console.warn(`[warn] ${warning}`);
   }
   for (const warning of labelHints.warnings) {
     console.warn(`[warn] ${warning}`);
   }
-  if (metadata.unknownKeys.length > 0) {
-    throw new Error(`[error] Unsupported metadata keys: ${metadata.unknownKeys.join(", ")}`);
+  for (const key of metadata.unknownKeys) {
+    const hint = key === "priority" ? "use project_priority instead of priority" : "remove unrecognized keys";
+    console.warn(`[warn] Unsupported metadata key ignored: '${key}' -- ${hint}`);
   }
+}
 
-  const requestedProjectRef =
-    metadata.explicitKeys.has("project") && metadata.values.project ? metadata.values.project : fallbackProjectRef;
-  const targetProject = parseProjectRef(requestedProjectRef);
-  if (normalizeName(targetProject.org) !== normalizeName(fallbackProject.org)) {
-    token = await getInstallationToken(appId, privateKey, targetProject.org);
-  }
-
+async function fetchProjectMetadata(token, targetProject) {
   const projectMetaQuery = `
     query ProjectMeta($org: String!, $number: Int!) {
       organization(login: $org) {
@@ -844,7 +895,28 @@ async function run() {
   if (!project?.id) {
     throw new Error(`[error] Could not find project ${targetProject.org}/${targetProject.number}`);
   }
+  return project;
+}
 
+async function loadTargetProjectContext({ auth, context, metadata }) {
+  const requestedProjectRef =
+    metadata.explicitKeys.has("project") && metadata.values.project
+      ? metadata.values.project
+      : context.fallbackProjectRef;
+  const targetProject = parseProjectRef(requestedProjectRef);
+  const token =
+    normalizeName(targetProject.org) === normalizeName(context.fallbackProject.org)
+      ? auth.token
+      : await getInstallationToken(context.appId, context.privateKey, targetProject.org);
+  const project = await fetchProjectMetadata(token, targetProject);
+  return {
+    token,
+    project,
+    requestedProjectRef,
+  };
+}
+
+async function fetchIssueProjectItems(token, issueNodeId) {
   const issueItemQuery = `
     query IssueProjectItems($issueId: ID!) {
       node(id: $issueId) {
@@ -890,10 +962,17 @@ async function run() {
       }
     }
   `;
+  return githubGraphql(token, issueItemQuery, { issueId: issueNodeId });
+}
 
-  const issueData = await githubGraphql(token, issueItemQuery, { issueId: event.issueNodeId });
-  const projectItems = issueData?.node?.projectItems?.nodes || [];
-  const matchingItem = projectItems.find((entry) => entry?.project?.id === project.id) || null;
+async function addProjectItemIfNeeded({ token, event, project, requestedProjectRef, dryRun }) {
+  if (dryRun) {
+    console.log(`[dry-run] ${event.repoFullName}#${event.issueNumber} would be added to project ${requestedProjectRef}`);
+    return {
+      itemId: null,
+      currentByField: new Map(),
+    };
+  }
 
   const addItemMutation = `
     mutation AddProjectItem($projectId: ID!, $contentId: ID!) {
@@ -904,50 +983,70 @@ async function run() {
       }
     }
   `;
+  const added = await githubGraphql(token, addItemMutation, {
+    projectId: project.id,
+    contentId: event.issueNodeId,
+  });
+  const itemId = added?.addProjectV2ItemById?.item?.id || null;
+  if (!itemId) {
+    throw new Error("[error] Failed to add issue to project");
+  }
+  console.log(`[write] ${event.repoFullName}#${event.issueNumber} added to project ${requestedProjectRef}`);
+  return {
+    itemId,
+    currentByField: new Map(),
+  };
+}
+
+async function ensureProjectItem({ token, event, project, requestedProjectRef, dryRun }) {
+  const issueData = await fetchIssueProjectItems(token, event.issueNodeId);
+  const projectItems = issueData?.node?.projectItems?.nodes || [];
+  const matchingItem = projectItems.find((entry) => entry?.project?.id === project.id) || null;
 
   let itemId = matchingItem?.id || null;
   let currentByField = matchingItem ? readCurrentFieldValues(matchingItem.fieldValues?.nodes || []) : new Map();
 
   if (!itemId) {
-    if (dryRun) {
-      console.log(`[dry-run] ${event.repoFullName}#${event.issueNumber} would be added to project ${requestedProjectRef}`);
-    } else {
-      const added = await githubGraphql(token, addItemMutation, {
-        projectId: project.id,
-        contentId: event.issueNodeId,
-      });
-      itemId = added?.addProjectV2ItemById?.item?.id || null;
-      if (!itemId) {
-        throw new Error("[error] Failed to add issue to project");
-      }
-      currentByField = new Map();
-      console.log(`[write] ${event.repoFullName}#${event.issueNumber} added to project ${requestedProjectRef}`);
-    }
+    const addedContext = await addProjectItemIfNeeded({
+      token,
+      event,
+      project,
+      requestedProjectRef,
+      dryRun,
+    });
+
+    itemId = addedContext.itemId;
+    currentByField = addedContext.currentByField;
   }
 
+  return { itemId, currentByField };
+}
+
+function createHydrationPlan({ project, metadata, labelHints, currentByField }) {
   const fields = project.fields?.nodes || [];
   validateRequiredProjectFields(fields);
-  const { operations, notes, warnings: planWarnings } = planHydration(metadata, labelHints, currentByField, fields);
+  return planHydration(metadata, labelHints, currentByField, fields);
+}
 
+function emitHydrationPlan(itemId, plan) {
   if (itemId) {
     console.log(`[info] project item id: ${itemId}`);
   } else {
     console.log("[info] project item id: <pending add>");
   }
 
-  for (const note of notes) {
+  for (const note of plan.notes) {
     console.log(`[decision] ${note}`);
   }
-  for (const warning of planWarnings) {
+
+  for (const warning of plan.warnings) {
     console.warn(`[warn] ${warning}`);
   }
+}
 
-  if (operations.length === 0) {
-    console.log("[summary] no field updates required");
-    return;
-  }
-
-  const setTextMutation = `
+function buildFieldUpdateMutations() {
+  return {
+    text: `
     mutation SetTextField($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) {
       updateProjectV2ItemFieldValue(
         input: {
@@ -962,9 +1061,8 @@ async function run() {
         }
       }
     }
-  `;
-
-  const setNumberMutation = `
+  `,
+    number: `
     mutation SetNumberField($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: Float!) {
       updateProjectV2ItemFieldValue(
         input: {
@@ -979,9 +1077,8 @@ async function run() {
         }
       }
     }
-  `;
-
-  const setSingleSelectMutation = `
+  `,
+    singleSelect: `
     mutation SetSingleSelectField($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
       updateProjectV2ItemFieldValue(
         input: {
@@ -996,54 +1093,122 @@ async function run() {
         }
       }
     }
-  `;
+  `,
+  };
+}
 
-  for (const op of operations) {
-    const issueKey = `${event.repoFullName}#${event.issueNumber}`;
-    if (dryRun) {
-      console.log(
-        `[dry-run] ${issueKey} ${op.fieldName}: "${op.currentValue ?? ""}" -> "${op.value}" (source=${op.source})`,
-      );
-      continue;
-    }
+async function applyHydrationOperation({ token, project, itemId, event, dryRun, op, mutations }) {
+  const issueKey = `${event.repoFullName}#${event.issueNumber}`;
 
-    if (!itemId) {
-      throw new Error("[error] Project item ID missing before mutation");
-    }
+  if (dryRun) {
+    console.log(`[dry-run] ${issueKey} ${op.fieldName}: "${op.currentValue ?? ""}" -> "${op.value}" (source=${op.source})`);
+    return;
+  }
 
-    if (op.type === "text") {
-      await githubGraphql(token, setTextMutation, {
-        projectId: project.id,
-        itemId,
-        fieldId: op.fieldId,
-        value: String(op.value),
-      });
-      console.log(`[write] ${issueKey} ${op.fieldName} updated (source=${op.source})`);
-      continue;
-    }
+  if (!itemId) {
+    throw new Error("[error] Project item ID missing before mutation");
+  }
 
-    if (op.type === "number") {
-      await githubGraphql(token, setNumberMutation, {
-        projectId: project.id,
-        itemId,
-        fieldId: op.fieldId,
-        value: Number(op.value),
-      });
-      console.log(`[write] ${issueKey} ${op.fieldName} updated (source=${op.source})`);
-      continue;
-    }
-
-    await githubGraphql(token, setSingleSelectMutation, {
+  if (op.type === "text") {
+    await githubGraphql(token, mutations.text, {
       projectId: project.id,
       itemId,
       fieldId: op.fieldId,
-      optionId: op.optionId,
+      value: String(op.value),
     });
     console.log(`[write] ${issueKey} ${op.fieldName} updated (source=${op.source})`);
+    return;
   }
 
-  console.log(`[summary] mode=${dryRun ? "dry-run" : "write"}`);
-  console.log(`[summary] planned updates=${operations.length}`);
+  if (op.type === "number") {
+    await githubGraphql(token, mutations.number, {
+      projectId: project.id,
+      itemId,
+      fieldId: op.fieldId,
+      value: Number(op.value),
+    });
+    console.log(`[write] ${issueKey} ${op.fieldName} updated (source=${op.source})`);
+    return;
+  }
+
+  await githubGraphql(token, mutations.singleSelect, {
+    projectId: project.id,
+    itemId,
+    fieldId: op.fieldId,
+    optionId: op.optionId,
+  });
+  console.log(`[write] ${issueKey} ${op.fieldName} updated (source=${op.source})`);
+}
+
+async function applyHydrationOperations({ token, project, itemId, event, dryRun, operations }) {
+  const mutations = buildFieldUpdateMutations();
+
+  for (const op of operations) {
+    await applyHydrationOperation({
+      token,
+      project,
+      itemId,
+      event,
+      dryRun,
+      op,
+      mutations,
+    });
+  }
+}
+
+async function run() {
+  const args = parseArgs(process.argv);
+  if (args.selfTest) {
+    runSelfTests();
+    return;
+  }
+
+  const context = buildRunContext(args);
+  const auth = await createHydrationAuth(context);
+  const event = await loadHydrationEvent(args, auth.token);
+  const planningInput = parseHydrationInputs(event);
+
+  emitInputWarnings(planningInput.metadata, planningInput.labelHints);
+
+  const projectContext = await loadTargetProjectContext({
+    auth,
+    context,
+    metadata: planningInput.metadata,
+  });
+
+  const itemContext = await ensureProjectItem({
+    token: projectContext.token,
+    event,
+    project: projectContext.project,
+    requestedProjectRef: projectContext.requestedProjectRef,
+    dryRun: context.dryRun,
+  });
+
+  const plan = createHydrationPlan({
+    project: projectContext.project,
+    metadata: planningInput.metadata,
+    labelHints: planningInput.labelHints,
+    currentByField: itemContext.currentByField,
+  });
+
+  emitHydrationPlan(itemContext.itemId, plan);
+
+  if (plan.operations.length === 0) {
+    console.log("[summary] no field updates required");
+    return;
+  }
+
+  await applyHydrationOperations({
+    token: projectContext.token,
+    project: projectContext.project,
+    itemId: itemContext.itemId,
+    event,
+    dryRun: context.dryRun,
+    operations: plan.operations,
+  });
+
+  console.log(`[summary] mode=${context.dryRun ? "dry-run" : "write"}`);
+  console.log(`[summary] planned updates=${plan.operations.length}`);
 }
 
 function runSelfTests() {
@@ -1054,9 +1219,9 @@ function runSelfTests() {
     [
       "<!-- arbiter-project",
       "project: arbiter-systems/2",
+      "repo: arbiter-systems/.github",
       "status: Inbox",
       "lane: active-mvp",
-      "priority: High",
       "project_priority: Low",
       "phase: mvp",
       "release_gate: local-mvp",
@@ -1064,7 +1229,7 @@ function runSelfTests() {
       "scope_risk: medium",
       "confidence: high",
       "agent: codex",
-      "workstream: MVP Execution",
+      "workstream: execution",
       "validation_command: npm test",
       "blocked_by:",
       "implementation_order: 7",
@@ -1073,6 +1238,8 @@ function runSelfTests() {
   );
   assert.equal(metadata.found, true);
   assert.equal(metadata.values.project, "arbiter-systems/2");
+  assert.equal(metadata.values.repo, "arbiter-systems/.github");
+  assert.equal(metadata.unknownKeys.length, 0);
   assert.equal(metadata.values.status, "Inbox");
   assert.equal(metadata.values.lane, "active-mvp");
   assert.equal(metadata.values.project_priority, "Low");
@@ -1082,7 +1249,7 @@ function runSelfTests() {
   assert.equal(metadata.values.scope_risk, "medium");
   assert.equal(metadata.values.confidence, "high");
   assert.equal(metadata.values.agent, "codex");
-  assert.equal(metadata.values.workstream, "MVP Execution");
+  assert.equal(metadata.values.workstream, "execution");
   assert.equal(metadata.values.validation_command, "npm test");
   assert.equal(metadata.values.blocked_by, "");
   assert.equal(metadata.values.implementation_order, "7");
@@ -1093,16 +1260,14 @@ function runSelfTests() {
   assert.equal(metadata.found, true);
   assert.equal(metadata.warnings.length, 1);
 
-  metadata = parseMetadataBlock("<!-- arbiter-project\nproject_priority: High\npriority: Low\n-->");
-  assert.equal(metadata.values.project_priority, "Low");
+  metadata = parseMetadataBlock("<!-- arbiter-project\npriority: High\n-->");
+  assert.equal(metadata.unknownKeys.includes("priority"), true);
+  assert.equal(metadata.values.project_priority, undefined);
 
   metadata = parseMetadataBlock("<!-- arbiter-project\nunknown_field: value\n-->");
   assert.equal(metadata.unknownKeys.includes("unknown_field"), true);
-  assert.throws(() => {
-    if (metadata.unknownKeys.length > 0) {
-      throw new Error(`[error] Unsupported metadata keys: ${metadata.unknownKeys.join(", ")}`);
-    }
-  }, /Unsupported metadata keys/);
+  metadata = parseMetadataBlock("<!-- arbiter-project\narea: ci\n-->");
+  assert.equal(metadata.unknownKeys.includes("area"), true);
 
   metadata = parseMetadataBlock("<!-- arbiter-project\nphase:\n-->");
   assert.equal(metadata.explicitKeys.has("phase"), false);
@@ -1119,7 +1284,12 @@ function runSelfTests() {
   assert.equal(labels.status, "Blocked");
 
   labels = mapLabelsToFieldHints(["ready"]);
-  assert.equal(labels.status, "Ready");
+  assert.equal(labels.status, null);
+  labels = mapLabelsToFieldHints(["status: ready"]);
+  assert.equal(labels.status, null);
+
+  labels = mapLabelsToFieldHints(["triage"]);
+  assert.equal(labels.status, "Triage");
 
   labels = mapLabelsToFieldHints(["priority: high"]);
   assert.equal(labels.priority, "High");
@@ -1212,7 +1382,7 @@ function runSelfTests() {
       id: "f-workstream",
       name: "Workstream",
       options: [
-        { id: "o-mvp-exec", name: "MVP Execution" },
+        { id: "o-exec", name: "execution" },
       ],
     },
   ];
@@ -1245,7 +1415,7 @@ function runSelfTests() {
   plan = planHydration(
     {
       found: true,
-      values: { lane: "active-mvp", project_priority: "High", workstream: "MVP Execution" },
+      values: { lane: "active-mvp", project_priority: "High", workstream: "execution" },
       explicitKeys: new Set(["lane", "project_priority", "workstream"]),
       warnings: [],
       unknownKeys: [],
@@ -1284,30 +1454,103 @@ function runSelfTests() {
     /Missing required project fields/,
   );
 
-  assert.throws(
-    () => planHydration(
-      {
-        found: true,
-        values: { project_priority: "Critical" },
-        explicitKeys: new Set(["project_priority"]),
-        warnings: [],
-        unknownKeys: [],
-      },
-      { lane: null, priority: null, status: null, warnings: [] },
-      new Map(),
-      fields,
+  plan = planHydration(
+    {
+      found: true,
+      values: { project_priority: "Critical" },
+      explicitKeys: new Set(["project_priority"]),
+      warnings: [],
+      unknownKeys: [],
+    },
+    { lane: null, priority: null, status: null, warnings: [] },
+    new Map(),
+    fields,
+  );
+  assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
+  assert.equal(
+    plan.warnings.some((warning) =>
+      warning.includes("Unknown single-select option 'Critical' for field 'Project Priority'; skipping"),
     ),
-    /Unsupported value 'Critical'/,
+    true,
+  );
+
+  plan = planHydration(
+    {
+      found: true,
+      values: { project_priority: "P1" },
+      explicitKeys: new Set(["project_priority"]),
+      warnings: [],
+      unknownKeys: [],
+    },
+    { lane: null, priority: null, status: null, warnings: [] },
+    new Map(),
+    fields,
+  );
+  assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
+  assert.equal(
+    plan.warnings.some((warning) =>
+      warning.includes("Unknown single-select option 'P1' for field 'Project Priority'; skipping"),
+    ),
+    true,
+  );
+
+  plan = planHydration(
+    {
+      found: true,
+      values: { workstream: "execution" },
+      explicitKeys: new Set(["workstream"]),
+      warnings: [],
+      unknownKeys: [],
+    },
+    { lane: null, priority: null, status: null, warnings: [] },
+    new Map(),
+    fields.filter((field) => field.name !== "Workstream"),
+  );
+  assert.equal(plan.operations.some((op) => op.key === "workstream"), false);
+  assert.equal(
+    plan.warnings.some((warning) => warning.includes("Optional project field for 'workstream'")),
+    true,
+  );
+
+  const missingOptionFields = fields.map((field) =>
+    field.name === "Project Priority"
+      ? { ...field, options: [{ id: "o-medium", name: "Medium" }] }
+      : field,
+  );
+  plan = planHydration(
+    {
+      found: true,
+      values: { project_priority: "High" },
+      explicitKeys: new Set(["project_priority"]),
+      warnings: [],
+      unknownKeys: [],
+    },
+    { lane: null, priority: null, status: null, warnings: [] },
+    new Map(),
+    missingOptionFields,
+  );
+  assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
+  assert.equal(
+    plan.warnings.some((warning) =>
+      warning.includes("Unknown single-select option 'High' for field 'Project Priority'; skipping"),
+    ),
+    true,
   );
 
   console.log("[self-test] ok");
 }
 
-run().catch((error) => {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error(message.startsWith("[error]") ? message : `[error] ${message}`);
-  process.exit(1);
-});
+async function main() {
+  try {
+    await run();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(message.startsWith("[error]") ? message : `[error] ${message}`);
+    process.exitCode = 1;
+  }
+}
+
+main();
 
 module.exports = {
   mapLabelsToFieldHints,
