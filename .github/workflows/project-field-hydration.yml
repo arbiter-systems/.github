@@ -1,0 +1,34 @@
+name: Project Field Hydration
+
+on:
+  issues:
+    types:
+      - opened
+      - edited
+      - labeled
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  hydrate-project-fields:
+    if: ${{ github.event.issue.user.type != 'Bot' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DRY_RUN: ${{ vars.PROJECT_FIELD_HYDRATION_DRY_RUN || 'false' }}
+      PROJECT_AUTOMATION_PROJECT: ${{ vars.PROJECT_AUTOMATION_PROJECT || 'arbiter-systems/2' }}
+      PROJECT_AUTOMATION_APP_ID: ${{ secrets.PROJECT_AUTOMATION_APP_ID }}
+      PROJECT_AUTOMATION_PRIVATE_KEY: ${{ secrets.PROJECT_AUTOMATION_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Hydrate project fields
+        run: >
+          node scripts/hydrate-project-fields.js
+          --event-path "${GITHUB_EVENT_PATH}"
+          --dry-run "${DRY_RUN}"
+          --project "${PROJECT_AUTOMATION_PROJECT}"
