@@ -14,18 +14,139 @@ const SUPPORTED_METADATA_KEYS = new Set([
   "status",
   "lane",
   "priority",
+  "project_priority",
+  "phase",
+  "release_gate",
+  "implementation_readiness",
+  "scope_risk",
+  "confidence",
+  "agent",
+  "workstream",
+  "validation_command",
   "blocked_by",
   "implementation_order",
-  "area",
 ]);
 
 const FIELD_CONFIG = {
-  status: { type: "single-select", candidates: ["Status"] },
-  lane: { type: "single-select", candidates: ["Lane"] },
-  priority: { type: "single-select", candidates: ["Project Priority", "Priority"] },
+  status: {
+    type: "single-select",
+    required: true,
+    candidates: ["Status"],
+    values: {
+      inbox: "Inbox",
+      triage: "Triage",
+      ready: "Ready",
+      "in progress": "In Progress",
+      review: "Review",
+      blocked: "Blocked",
+      done: "Done",
+      deferred: "Deferred",
+      "do not implement yet": "Do Not Implement Yet",
+    },
+  },
+  lane: {
+    type: "single-select",
+    required: true,
+    candidates: ["Lane"],
+    values: {
+      "active-mvp": "active-mvp",
+      deferred: "deferred",
+    },
+  },
+  project_priority: {
+    type: "single-select",
+    required: true,
+    candidates: ["Project Priority", "Priority"],
+    values: {
+      high: "High",
+      medium: "Medium",
+      low: "Low",
+      p1: "High",
+      p2: "Medium",
+      p3: "Low",
+    },
+  },
+  phase: {
+    type: "single-select",
+    required: false,
+    candidates: ["Phase"],
+    values: {
+      foundation: "foundation",
+      mvp: "mvp",
+      "hosted-demo": "hosted-demo",
+      "customer-pilot": "customer-pilot",
+      "post-mvp": "post-mvp",
+    },
+  },
+  release_gate: {
+    type: "single-select",
+    required: false,
+    candidates: ["Release Gate"],
+    values: {
+      none: "none",
+      "local-mvp": "local-mvp",
+      "hosted-demo": "hosted-demo",
+      "customer-pilot": "customer-pilot",
+      "post-mvp": "post-mvp",
+    },
+  },
+  implementation_readiness: {
+    type: "single-select",
+    required: false,
+    candidates: ["Implementation Readiness"],
+    values: {
+      "not-ready": "not-ready",
+      "needs-clarification": "needs-clarification",
+      ready: "ready",
+    },
+  },
+  scope_risk: {
+    type: "single-select",
+    required: false,
+    candidates: ["Scope Risk"],
+    values: {
+      low: "low",
+      medium: "medium",
+      high: "high",
+    },
+  },
+  confidence: {
+    type: "single-select",
+    required: false,
+    candidates: ["Confidence"],
+    values: {
+      high: "high",
+      medium: "medium",
+      low: "low",
+    },
+  },
+  agent: {
+    type: "single-select",
+    required: false,
+    candidates: ["Agent"],
+    values: {
+      none: "none",
+      codex: "Codex",
+      claude: "Claude",
+      copilot: "Copilot",
+      mixed: "mixed",
+    },
+  },
+  workstream: {
+    type: "single-select",
+    required: false,
+    candidates: ["Workstream"],
+    values: {
+      "github project management": "GitHub Project Management",
+      "mvp execution": "MVP Execution",
+      "security & compliance": "Security & Compliance",
+      "documentation & site": "Documentation & Site",
+      "infrastructure & ops": "Infrastructure & Ops",
+    },
+  },
+  validation_command: { type: "text", required: false, candidates: ["Validation Command"] },
   blocked_by: { type: "text", candidates: ["Blocked By"] },
-  implementation_order: { type: "number", candidates: ["Implementation Order"] },
-  area: { type: "single-select", candidates: ["Area"] },
+  implementation_order: { type: "number", required: false, candidates: ["Implementation Order"] },
 };
 
 function normalizeName(value) {
@@ -75,6 +196,8 @@ function parseArgs(argv) {
     dryRun: null,
     eventPath: "",
     projectRef: "",
+    issueNumber: null,
+    repoFullName: "",
     selfTest: false,
   };
 
@@ -99,6 +222,16 @@ function parseArgs(argv) {
       i += 1;
       continue;
     }
+    if (arg === "--issue-number") {
+      args.issueNumber = argv[i + 1] || "";
+      i += 1;
+      continue;
+    }
+    if (arg === "--repo") {
+      args.repoFullName = argv[i + 1] || "";
+      i += 1;
+      continue;
+    }
   }
 
   return args;
@@ -114,6 +247,14 @@ function parseProjectRef(value) {
     org: match[1],
     number: Number(match[2]),
   };
+}
+
+function canonicalMetadataKey(key) {
+  const normalized = normalizeName(key);
+  if (normalized === "priority") {
+    return "project_priority";
+  }
+  return normalized;
 }
 
 function parseMetadataBlock(body) {
@@ -145,7 +286,7 @@ function parseMetadataBlock(body) {
       warnings.push(`ignored malformed metadata line: "${line}"`);
       continue;
     }
-    const key = normalizeName(pairMatch[1]);
+    const key = canonicalMetadataKey(pairMatch[1]);
     const value = String(pairMatch[2] || "").trim();
     if (!SUPPORTED_METADATA_KEYS.has(key)) {
       unknownKeys.push(key);
@@ -177,11 +318,30 @@ function mapLabelsToFieldHints(labels) {
   if (normalized.has("active-mvp") || normalized.has("lane: active-mvp")) {
     laneMatches.push("active-mvp");
   }
+  if (normalized.has("deferred") || normalized.has("lane: deferred")) {
+    laneMatches.push("deferred");
+  }
+
+  const priorityMatches = [];
+  if (normalized.has("priority: high")) {
+    priorityMatches.push("High");
+  }
+  if (normalized.has("priority: medium")) {
+    priorityMatches.push("Medium");
+  }
+  if (normalized.has("priority: low")) {
+    priorityMatches.push("Low");
+  }
+
+  const statusMatches = [];
   if (normalized.has("ready") || normalized.has("status: ready")) {
-    laneMatches.push("ready");
+    statusMatches.push("Ready");
   }
   if (normalized.has("blocked") || normalized.has("status: blocked")) {
-    laneMatches.push("blocked");
+    statusMatches.push("Blocked");
+  }
+  if (normalized.has("triage") || normalized.has("status: triage")) {
+    statusMatches.push("Triage");
   }
 
   let lane = null;
@@ -191,17 +351,6 @@ function mapLabelsToFieldHints(labels) {
     warnings.push(`multiple lane labels matched: ${laneMatches.join(", ")}; skipping lane inference`);
   }
 
-  const priorityMatches = [];
-  if (normalized.has("priority: high")) {
-    priorityMatches.push("P1");
-  }
-  if (normalized.has("priority: medium")) {
-    priorityMatches.push("P2");
-  }
-  if (normalized.has("priority: low")) {
-    priorityMatches.push("P3");
-  }
-
   let priority = null;
   if (priorityMatches.length === 1) {
     priority = priorityMatches[0];
@@ -209,7 +358,14 @@ function mapLabelsToFieldHints(labels) {
     warnings.push(`multiple priority labels matched: ${priorityMatches.join(", ")}; skipping priority inference`);
   }
 
-  return { lane, priority, warnings };
+  let status = null;
+  if (statusMatches.length === 1) {
+    status = statusMatches[0];
+  } else if (statusMatches.length > 1) {
+    warnings.push(`multiple status labels matched: ${statusMatches.join(", ")}; skipping status inference`);
+  }
+
+  return { lane, priority, status, warnings };
 }
 
 function base64Url(input) {
@@ -302,6 +458,39 @@ async function getInstallationToken(appId, privateKey, org) {
   return accessToken.token;
 }
 
+async function fetchIssueByNumber(token, repoFullName, issueNumber) {
+  const match = String(repoFullName || "").trim().match(/^([^/]+)\/([^/]+)$/);
+  if (!match) {
+    throw new Error("[error] --repo must be in owner/repo format");
+  }
+  if (!/^\d+$/.test(String(issueNumber || "").trim())) {
+    throw new Error("[error] --issue-number must be a positive integer");
+  }
+
+  const owner = match[1];
+  const repo = match[2];
+  const number = Number(issueNumber);
+  const issue = await httpJson({
+    method: "GET",
+    url: `${GITHUB_API_URL}/repos/${owner}/${repo}/issues/${number}`,
+    token,
+  });
+
+  if (!issue?.node_id) {
+    throw new Error("[error] Issue lookup failed: missing node_id");
+  }
+
+  return {
+    action: "workflow_dispatch",
+    issueNodeId: issue.node_id,
+    issueNumber: Number(issue.number || number),
+    issueBody: String(issue.body || ""),
+    labels: Array.isArray(issue.labels) ? issue.labels : [],
+    repoFullName: `${owner}/${repo}`,
+    repoOwner: owner,
+  };
+}
+
 function loadIssueEvent(filePath) {
   const path = String(filePath || "").trim();
   if (!path) {
@@ -387,6 +576,23 @@ function sameValue(type, current, desiredValue) {
   return String(current.value || "") === String(desiredValue || "");
 }
 
+function normalizeConfiguredValue(key, rawValue) {
+  const config = FIELD_CONFIG[key];
+  if (!config) {
+    return rawValue;
+  }
+  if (config.type !== "single-select") {
+    return rawValue;
+  }
+  const normalizedInput = normalizeName(rawValue);
+  const mapped = config.values?.[normalizedInput];
+  if (!mapped) {
+    const allowed = Object.values(config.values || {}).join(", ");
+    throw new Error(`[error] Unsupported value '${rawValue}' for '${key}'. Allowed values: ${allowed}`);
+  }
+  return mapped;
+}
+
 function getSingleSelectOptionId(field, desiredValue) {
   const normalizedDesired = normalizeName(desiredValue);
   const option = (field?.options || []).find((entry) => normalizeName(entry?.name) === normalizedDesired);
@@ -396,8 +602,25 @@ function getSingleSelectOptionId(field, desiredValue) {
   return option.id;
 }
 
+function validateRequiredProjectFields(fields) {
+  const missing = [];
+  for (const [key, config] of Object.entries(FIELD_CONFIG)) {
+    if (!config.required) {
+      continue;
+    }
+    const field = findFieldByCandidates(fields, config.candidates);
+    if (!field?.id) {
+      missing.push(`${key} (${config.candidates.join(", ")})`);
+    }
+  }
+  if (missing.length > 0) {
+    throw new Error(`[error] Missing required project fields: ${missing.join("; ")}`);
+  }
+}
+
 function planHydration(metadata, labelHints, currentByField, fields) {
   const notes = [];
+  const warnings = [];
   const candidates = [];
 
   function currentFor(key) {
@@ -411,6 +634,8 @@ function planHydration(metadata, labelHints, currentByField, fields) {
   const statusCurrent = currentFor("status");
   if (metadata.explicitKeys.has("status")) {
     candidates.push({ key: "status", value: metadata.values.status, source: "metadata" });
+  } else if (labelHints.status && isEmptyCurrent(statusCurrent)) {
+    candidates.push({ key: "status", value: labelHints.status, source: "label" });
   } else if (isEmptyCurrent(statusCurrent)) {
     candidates.push({ key: "status", value: "Inbox", source: "default" });
   } else {
@@ -426,15 +651,43 @@ function planHydration(metadata, labelHints, currentByField, fields) {
     notes.push("Lane unchanged: label inference skipped because value already set");
   }
 
-  const priorityCurrent = currentFor("priority");
-  if (metadata.explicitKeys.has("priority")) {
-    candidates.push({ key: "priority", value: metadata.values.priority, source: "metadata" });
+  const priorityCurrent = currentFor("project_priority");
+  if (metadata.explicitKeys.has("project_priority")) {
+    candidates.push({ key: "project_priority", value: metadata.values.project_priority, source: "metadata" });
   } else if (labelHints.priority && isEmptyCurrent(priorityCurrent)) {
-    candidates.push({ key: "priority", value: labelHints.priority, source: "label" });
+    candidates.push({ key: "project_priority", value: labelHints.priority, source: "label" });
   } else if (labelHints.priority && !isEmptyCurrent(priorityCurrent)) {
     notes.push("Priority unchanged: label inference skipped because value already set");
   }
 
+  if (metadata.explicitKeys.has("phase")) {
+    candidates.push({ key: "phase", value: metadata.values.phase, source: "metadata" });
+  }
+  if (metadata.explicitKeys.has("release_gate")) {
+    candidates.push({ key: "release_gate", value: metadata.values.release_gate, source: "metadata" });
+  }
+  if (metadata.explicitKeys.has("implementation_readiness")) {
+    candidates.push({
+      key: "implementation_readiness",
+      value: metadata.values.implementation_readiness,
+      source: "metadata",
+    });
+  }
+  if (metadata.explicitKeys.has("scope_risk")) {
+    candidates.push({ key: "scope_risk", value: metadata.values.scope_risk, source: "metadata" });
+  }
+  if (metadata.explicitKeys.has("confidence")) {
+    candidates.push({ key: "confidence", value: metadata.values.confidence, source: "metadata" });
+  }
+  if (metadata.explicitKeys.has("agent")) {
+    candidates.push({ key: "agent", value: metadata.values.agent, source: "metadata" });
+  }
+  if (metadata.explicitKeys.has("workstream")) {
+    candidates.push({ key: "workstream", value: metadata.values.workstream, source: "metadata" });
+  }
+  if (metadata.explicitKeys.has("validation_command")) {
+    candidates.push({ key: "validation_command", value: metadata.values.validation_command, source: "metadata" });
+  }
   if (metadata.explicitKeys.has("blocked_by")) {
     candidates.push({ key: "blocked_by", value: metadata.values.blocked_by, source: "metadata" });
   }
@@ -447,35 +700,41 @@ function planHydration(metadata, labelHints, currentByField, fields) {
     }
     candidates.push({ key: "implementation_order", value: parsed, source: "metadata" });
   }
-  if (metadata.explicitKeys.has("area")) {
-    candidates.push({ key: "area", value: metadata.values.area, source: "metadata" });
-  }
 
   const operations = [];
   for (const candidate of candidates) {
     const config = FIELD_CONFIG[candidate.key];
     const field = findFieldByCandidates(fields, config.candidates);
     if (!field?.id) {
-      // Fail fast on missing configured fields so project-schema drift is explicit and reviewable.
-      throw new Error(
-        `[error] Required project field for '${candidate.key}' was not found (looked for: ${config.candidates.join(", ")})`,
+      if (config.required) {
+        // Fail fast on missing required configured fields so project-schema drift is explicit and reviewable.
+        throw new Error(
+          `[error] Required project field for '${candidate.key}' was not found (looked for: ${config.candidates.join(", ")})`,
+        );
+      }
+      warnings.push(
+        `Optional project field for '${candidate.key}' was not found (looked for: ${config.candidates.join(
+          ", ",
+        )}); skipping`,
       );
+      continue;
     }
 
+    const normalizedValue = normalizeConfiguredValue(candidate.key, candidate.value);
     const current = currentByField.get(normalizeName(field.name)) || null;
-    if (sameValue(config.type, current, candidate.value)) {
-      notes.push(`${field.name} unchanged: value already '${candidate.value}'`);
+    if (sameValue(config.type, current, normalizedValue)) {
+      notes.push(`${field.name} unchanged: value already '${normalizedValue}'`);
       continue;
     }
 
     if (config.type === "single-select") {
-      const optionId = getSingleSelectOptionId(field, candidate.value);
+      const optionId = getSingleSelectOptionId(field, normalizedValue);
       operations.push({
         key: candidate.key,
         fieldId: field.id,
         fieldName: field.name,
         type: config.type,
-        value: candidate.value,
+        value: normalizedValue,
         optionId,
         source: candidate.source,
         currentValue: current ? current.value : "",
@@ -488,13 +747,13 @@ function planHydration(metadata, labelHints, currentByField, fields) {
       fieldId: field.id,
       fieldName: field.name,
       type: config.type,
-      value: candidate.value,
+      value: normalizedValue,
       source: candidate.source,
       currentValue: current ? current.value : "",
     });
   }
 
-  return { operations, notes };
+  return { operations, notes, warnings };
 }
 
 async function run() {
@@ -505,8 +764,30 @@ async function run() {
   }
 
   const dryRun = parseDryRun(args.dryRun != null ? args.dryRun : process.env.DRY_RUN);
-  const eventPath = args.eventPath || process.env.GITHUB_EVENT_PATH || "";
-  const event = loadIssueEvent(eventPath);
+  const fallbackProjectRef = args.projectRef || process.env.PROJECT_AUTOMATION_PROJECT || DEFAULT_PROJECT_REF;
+  const fallbackProject = parseProjectRef(fallbackProjectRef);
+
+  const appId = String(process.env.PROJECT_AUTOMATION_APP_ID || "").trim();
+  if (!appId) {
+    throw new Error("[error] PROJECT_AUTOMATION_APP_ID is required");
+  }
+  const privateKeyRaw = String(process.env.PROJECT_AUTOMATION_PRIVATE_KEY || "").trim();
+  if (!privateKeyRaw) {
+    throw new Error("[error] PROJECT_AUTOMATION_PRIVATE_KEY is required");
+  }
+  const privateKey = privateKeyRaw.replace(/\\n/g, "\n");
+
+  let token = await getInstallationToken(appId, privateKey, fallbackProject.org);
+
+  let event;
+  if (args.issueNumber) {
+    const repoFullName = args.repoFullName || process.env.GITHUB_REPOSITORY || "";
+    event = await fetchIssueByNumber(token, repoFullName, args.issueNumber);
+  } else {
+    const eventPath = args.eventPath || process.env.GITHUB_EVENT_PATH || "";
+    event = loadIssueEvent(eventPath);
+  }
+
   const metadata = parseMetadataBlock(event.issueBody);
   const labelHints = mapLabelsToFieldHints(event.labels);
 
@@ -521,22 +802,11 @@ async function run() {
   }
 
   const requestedProjectRef =
-    metadata.explicitKeys.has("project") && metadata.values.project
-      ? metadata.values.project
-      : args.projectRef || process.env.PROJECT_AUTOMATION_PROJECT || DEFAULT_PROJECT_REF;
+    metadata.explicitKeys.has("project") && metadata.values.project ? metadata.values.project : fallbackProjectRef;
   const targetProject = parseProjectRef(requestedProjectRef);
-
-  const appId = String(process.env.PROJECT_AUTOMATION_APP_ID || "").trim();
-  if (!appId) {
-    throw new Error("[error] PROJECT_AUTOMATION_APP_ID is required");
+  if (normalizeName(targetProject.org) !== normalizeName(fallbackProject.org)) {
+    token = await getInstallationToken(appId, privateKey, targetProject.org);
   }
-  const privateKeyRaw = String(process.env.PROJECT_AUTOMATION_PRIVATE_KEY || "").trim();
-  if (!privateKeyRaw) {
-    throw new Error("[error] PROJECT_AUTOMATION_PRIVATE_KEY is required");
-  }
-  const privateKey = privateKeyRaw.replace(/\\n/g, "\n");
-
-  const token = await getInstallationToken(appId, privateKey, targetProject.org);
 
   const projectMetaQuery = `
     query ProjectMeta($org: String!, $number: Int!) {
@@ -656,7 +926,8 @@ async function run() {
   }
 
   const fields = project.fields?.nodes || [];
-  const { operations, notes } = planHydration(metadata, labelHints, currentByField, fields);
+  validateRequiredProjectFields(fields);
+  const { operations, notes, warnings: planWarnings } = planHydration(metadata, labelHints, currentByField, fields);
 
   if (itemId) {
     console.log(`[info] project item id: ${itemId}`);
@@ -666,6 +937,9 @@ async function run() {
 
   for (const note of notes) {
     console.log(`[decision] ${note}`);
+  }
+  for (const warning of planWarnings) {
+    console.warn(`[warn] ${warning}`);
   }
 
   if (operations.length === 0) {
@@ -782,10 +1056,18 @@ function runSelfTests() {
       "project: arbiter-systems/2",
       "status: Inbox",
       "lane: active-mvp",
-      "priority: P1",
+      "priority: High",
+      "project_priority: Low",
+      "phase: mvp",
+      "release_gate: local-mvp",
+      "implementation_readiness: ready",
+      "scope_risk: medium",
+      "confidence: high",
+      "agent: codex",
+      "workstream: MVP Execution",
+      "validation_command: npm test",
       "blocked_by:",
       "implementation_order: 7",
-      "area: routing",
       "-->",
     ].join("\n"),
   );
@@ -793,40 +1075,67 @@ function runSelfTests() {
   assert.equal(metadata.values.project, "arbiter-systems/2");
   assert.equal(metadata.values.status, "Inbox");
   assert.equal(metadata.values.lane, "active-mvp");
-  assert.equal(metadata.values.priority, "P1");
+  assert.equal(metadata.values.project_priority, "Low");
+  assert.equal(metadata.values.phase, "mvp");
+  assert.equal(metadata.values.release_gate, "local-mvp");
+  assert.equal(metadata.values.implementation_readiness, "ready");
+  assert.equal(metadata.values.scope_risk, "medium");
+  assert.equal(metadata.values.confidence, "high");
+  assert.equal(metadata.values.agent, "codex");
+  assert.equal(metadata.values.workstream, "MVP Execution");
+  assert.equal(metadata.values.validation_command, "npm test");
   assert.equal(metadata.values.blocked_by, "");
   assert.equal(metadata.values.implementation_order, "7");
-  assert.equal(metadata.values.area, "routing");
   assert.equal(metadata.explicitKeys.has("blocked_by"), false);
+  assert.equal(metadata.explicitKeys.has("project_priority"), true);
 
   metadata = parseMetadataBlock("<!-- arbiter-project\nstatus Inbox\nlane: active-mvp\n-->");
   assert.equal(metadata.found, true);
   assert.equal(metadata.warnings.length, 1);
 
+  metadata = parseMetadataBlock("<!-- arbiter-project\nproject_priority: High\npriority: Low\n-->");
+  assert.equal(metadata.values.project_priority, "Low");
+
+  metadata = parseMetadataBlock("<!-- arbiter-project\nunknown_field: value\n-->");
+  assert.equal(metadata.unknownKeys.includes("unknown_field"), true);
+  assert.throws(() => {
+    if (metadata.unknownKeys.length > 0) {
+      throw new Error(`[error] Unsupported metadata keys: ${metadata.unknownKeys.join(", ")}`);
+    }
+  }, /Unsupported metadata keys/);
+
+  metadata = parseMetadataBlock("<!-- arbiter-project\nphase:\n-->");
+  assert.equal(metadata.explicitKeys.has("phase"), false);
+
   let labels = mapLabelsToFieldHints(["active-mvp"]);
   assert.equal(labels.lane, "active-mvp");
   assert.equal(labels.priority, null);
+  assert.equal(labels.status, null);
 
-  labels = mapLabelsToFieldHints(["ready"]);
-  assert.equal(labels.lane, "ready");
+  labels = mapLabelsToFieldHints(["lane: deferred"]);
+  assert.equal(labels.lane, "deferred");
 
   labels = mapLabelsToFieldHints(["blocked"]);
-  assert.equal(labels.lane, "blocked");
+  assert.equal(labels.status, "Blocked");
+
+  labels = mapLabelsToFieldHints(["ready"]);
+  assert.equal(labels.status, "Ready");
 
   labels = mapLabelsToFieldHints(["priority: high"]);
-  assert.equal(labels.priority, "P1");
+  assert.equal(labels.priority, "High");
 
   labels = mapLabelsToFieldHints(["priority: medium"]);
-  assert.equal(labels.priority, "P2");
+  assert.equal(labels.priority, "Medium");
 
   labels = mapLabelsToFieldHints(["priority: low"]);
-  assert.equal(labels.priority, "P3");
+  assert.equal(labels.priority, "Low");
 
   labels = mapLabelsToFieldHints([]);
   assert.equal(labels.lane, null);
   assert.equal(labels.priority, null);
+  assert.equal(labels.status, null);
 
-  labels = mapLabelsToFieldHints(["active-mvp", "blocked"]);
+  labels = mapLabelsToFieldHints(["active-mvp", "lane: deferred"]);
   assert.equal(labels.lane, null);
   assert.equal(labels.warnings.length > 0, true);
 
@@ -877,15 +1186,33 @@ function runSelfTests() {
       name: "Lane",
       options: [
         { id: "o-active", name: "active-mvp" },
-        { id: "o-ready", name: "ready" },
+        { id: "o-deferred", name: "deferred" },
       ],
     },
     {
       id: "f-priority",
       name: "Project Priority",
       options: [
-        { id: "o-p1", name: "P1" },
-        { id: "o-p2", name: "P2" },
+        { id: "o-high", name: "High" },
+        { id: "o-medium", name: "Medium" },
+      ],
+    },
+    {
+      id: "f-phase",
+      name: "Phase",
+      options: [
+        { id: "o-mvp", name: "mvp" },
+      ],
+    },
+    {
+      id: "f-validation",
+      name: "Validation Command",
+    },
+    {
+      id: "f-workstream",
+      name: "Workstream",
+      options: [
+        { id: "o-mvp-exec", name: "MVP Execution" },
       ],
     },
   ];
@@ -900,38 +1227,78 @@ function runSelfTests() {
 
   let plan = planHydration(
     metadataMissing,
-    { lane: "active-mvp", priority: "P1", warnings: [] },
+    { lane: "active-mvp", priority: "High", status: "Ready", warnings: [] },
     new Map([
       ["status", { type: "single-select", value: "Triage" }],
-      ["lane", { type: "single-select", value: "ready" }],
-      ["project priority", { type: "single-select", value: "P2" }],
+      ["lane", { type: "single-select", value: "deferred" }],
+      ["project priority", { type: "single-select", value: "Medium" }],
     ]),
     fields,
   );
   assert.equal(plan.operations.some((op) => op.key === "lane"), false);
-  assert.equal(plan.operations.some((op) => op.key === "priority"), false);
+  assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
   assert.equal(plan.operations.some((op) => op.key === "status"), false);
 
-  plan = planHydration(metadataMissing, { lane: null, priority: null, warnings: [] }, new Map(), fields);
+  plan = planHydration(metadataMissing, { lane: null, priority: null, status: null, warnings: [] }, new Map(), fields);
   assert.equal(plan.operations.some((op) => op.key === "status" && op.value === "Inbox" && op.source === "default"), true);
 
   plan = planHydration(
     {
       found: true,
-      values: { lane: "active-mvp", priority: "P1" },
-      explicitKeys: new Set(["lane", "priority"]),
+      values: { lane: "active-mvp", project_priority: "High", workstream: "MVP Execution" },
+      explicitKeys: new Set(["lane", "project_priority", "workstream"]),
       warnings: [],
       unknownKeys: [],
     },
-    { lane: null, priority: null, warnings: [] },
+    { lane: null, priority: null, status: null, warnings: [] },
     new Map([
-      ["lane", { type: "single-select", value: "ready" }],
-      ["project priority", { type: "single-select", value: "P2" }],
+      ["lane", { type: "single-select", value: "deferred" }],
+      ["project priority", { type: "single-select", value: "Medium" }],
     ]),
     fields,
   );
   assert.equal(plan.operations.some((op) => op.key === "lane" && op.source === "metadata"), true);
-  assert.equal(plan.operations.some((op) => op.key === "priority" && op.source === "metadata"), true);
+  assert.equal(plan.operations.some((op) => op.key === "project_priority" && op.source === "metadata"), true);
+  assert.equal(plan.operations.some((op) => op.key === "workstream" && op.source === "metadata"), true);
+
+  plan = planHydration(
+    {
+      found: true,
+      values: { phase: "mvp", validation_command: "npm test" },
+      explicitKeys: new Set(["phase", "validation_command"]),
+      warnings: [],
+      unknownKeys: [],
+    },
+    { lane: null, priority: null, status: null, warnings: [] },
+    new Map(),
+    fields.filter((field) => field.name !== "Phase"),
+  );
+  assert.equal(plan.operations.some((op) => op.key === "phase"), false);
+  assert.equal(
+    plan.warnings.some((warning) => warning.includes("Optional project field for 'phase' was not found")),
+    true,
+  );
+
+  assert.throws(
+    () => validateRequiredProjectFields(fields.filter((field) => field.name !== "Lane")),
+    /Missing required project fields/,
+  );
+
+  assert.throws(
+    () => planHydration(
+      {
+        found: true,
+        values: { project_priority: "Critical" },
+        explicitKeys: new Set(["project_priority"]),
+        warnings: [],
+        unknownKeys: [],
+      },
+      { lane: null, priority: null, status: null, warnings: [] },
+      new Map(),
+      fields,
+    ),
+    /Unsupported value 'Critical'/,
+  );
 
   console.log("[self-test] ok");
 }

@@ -20,32 +20,68 @@ The script reads an optional metadata block from the issue body:
 project: arbiter-systems/2
 status: Inbox
 lane: active-mvp
-priority: P1
+project_priority: High
+phase: mvp
+release_gate: local-mvp
+implementation_readiness: ready
+scope_risk: medium
+confidence: high
+agent: Codex
+workstream: MVP Execution
+validation_command: manual review only
 blocked_by:
 implementation_order:
-area:
 -->
 ```
 
 Rules:
 
 - `project` must be `org/number`.
-- Keys are optional.
+- Supported keys:
+  - `status`
+  - `lane`
+  - `priority` or `project_priority` (alias to `Project Priority`)
+  - `phase`
+  - `release_gate`
+  - `implementation_readiness`
+  - `scope_risk`
+  - `confidence`
+  - `agent`
+  - `workstream`
+  - `validation_command`
+  - `blocked_by`
+  - `implementation_order`
 - Empty values are treated as "not explicitly supplied."
 - Unknown metadata keys fail the run with a clear error.
+
+Allowed metadata values:
+
+- `status`: `Inbox`, `Triage`, `Ready`, `In Progress`, `Review`, `Blocked`, `Done`, `Deferred`, `Do Not Implement Yet`
+- `lane`: `active-mvp`, `deferred`
+- `project_priority`: `High`, `Medium`, `Low`
+- `phase`: `foundation`, `mvp`, `hosted-demo`, `customer-pilot`, `post-mvp`
+- `release_gate`: `none`, `local-mvp`, `hosted-demo`, `customer-pilot`, `post-mvp`
+- `implementation_readiness`: `not-ready`, `needs-clarification`, `ready`
+- `scope_risk`: `low`, `medium`, `high`
+- `confidence`: `high`, `medium`, `low`
+- `agent`: `none`, `Codex`, `Claude`, `Copilot`, `mixed`
+- `workstream`: `GitHub Project Management`, `MVP Execution`, `Security & Compliance`, `Documentation & Site`, `Infrastructure & Ops`
+
+`Project Priority` uses `High` / `Medium` / `Low` values, not `P1` / `P2` / `P3`.
 
 ## Label Mappings
 
 If a field is not explicitly supplied in metadata, the script can infer:
 
 - `active-mvp` -> `Lane=active-mvp`
-- `ready` -> `Lane=ready`
-- `blocked` -> `Lane=blocked`
-- `priority: high` -> `Priority=P1`
-- `priority: medium` -> `Priority=P2`
-- `priority: low` -> `Priority=P3`
+- `lane: deferred` -> `Lane=deferred`
+- `ready` or `status: ready` -> `Status=Ready`
+- `blocked` or `status: blocked` -> `Status=Blocked`
+- `priority: high` -> `Project Priority=High`
+- `priority: medium` -> `Project Priority=Medium`
+- `priority: low` -> `Project Priority=Low`
 
-If multiple conflicting lane labels or priority labels are present, inference is skipped and a warning is logged.
+If multiple conflicting lane, status, or priority labels are present, inference is skipped and a warning is logged.
 
 ## Defaults
 
@@ -60,6 +96,8 @@ If multiple conflicting lane labels or priority labels are present, inference is
 - Uses `updateProjectV2ItemFieldValue` for field updates.
 - Does not overwrite existing field values from defaults or label inference.
 - Metadata values are treated as explicit and may overwrite existing values for those fields.
+- Missing optional Project fields are logged as warnings and skipped.
+- Missing required Project fields fail the run (`Status`, `Lane`, `Project Priority`).
 - `--dry-run` performs no mutations.
 
 ## Required Variables, Secrets, and Permissions
