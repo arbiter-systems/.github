@@ -68,7 +68,7 @@ jobs:
           PROJECT_AUTOMATION_PROJECT: ${{ vars.PROJECT_AUTOMATION_PROJECT || 'arbiter-systems/2' }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || vars.PROJECT_FIELD_HYDRATION_DRY_RUN || 'false' }}
         run: >
-          node scripts/hydrate-project-fields.js
+          node scripts/hydrate-project-fields.cjs
           --event-path "${GITHUB_EVENT_PATH}"
           --dry-run "${DRY_RUN}"
           --project "${PROJECT_AUTOMATION_PROJECT}"
@@ -80,7 +80,7 @@ jobs:
           PROJECT_AUTOMATION_PROJECT: ${{ vars.PROJECT_AUTOMATION_PROJECT || 'arbiter-systems/2' }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || vars.PROJECT_FIELD_HYDRATION_DRY_RUN || 'false' }}
         run: >
-          node scripts/hydrate-project-fields.js
+          node scripts/hydrate-project-fields.cjs
           --issue-number "${{ inputs.issue_number }}"
           --repo "${{ inputs.repo || env.GITHUB_REPOSITORY }}"
           --dry-run "${DRY_RUN}"
