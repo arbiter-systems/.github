@@ -1,109 +1,234 @@
 # Sellable MVP Completion Gate
 
-This document defines when the Arbiter AI Execution Firewall MVP is demo-ready and buyer-explainable. It separates MVP completion from post-MVP platform work. Language follows [MVP Claim Guardrails](./mvp-claim-guardrails.md).
+This document defines the completion gate for the sellable MVP. It is intended to prevent the MVP from drifting into a broad platform build while still ensuring the product can be demonstrated as a buyer-explainable AI execution control layer.
 
-The backend MVP foundation is already validated (see [Foundation](#foundation-already-complete) below). Sellable MVP completion requires demonstrable buyer-facing control outcomes: a reproducible demo flow, a readable execution receipt, a cost or waste signal, prompt privacy posture validated in demo output, and accompanying documentation a buyer can read without source code access.
+For this document, buyer-explainable means a technical buyer can understand what Arbiter controlled, why it acted, and what operational or cost impact resulted without reading source code.
 
-Related sellable MVP epic: arbiter-systems/control-plane-api#133
+The MVP foundation is not considered complete because the code exists. It is complete only when the target behaviors are demonstrated through local validation, receipt output, structured evidence, and supporting buyer-facing documentation.
 
-## Foundation (Already Complete)
+## Foundation
 
-The backend MVP foundation is validated and documented in [MVP Backend Baseline](./mvp-backend-baseline.md) and [Local Two-Service Docker Validation - 2026-05-16](./local-two-service-validation-results.md):
+The MVP foundation already includes the core execution-control shape:
 
-- Control Plane API and AI Execution Service build and run as local Docker containers.
-- Two-service local Docker flow validated end to end.
-- `POST /v1/execute/stream` returns SSE token and final events.
-- Health and readiness checks pass on both services.
-- Fake/deterministic provider flow works without real provider credentials.
-- `executionId` and `correlationId` are consistent across Control Plane and AI Execution Service logs.
-- Local two-service stack starts and tears down cleanly.
+- AI execution request path through the control plane.
+- Execution service integration contract.
+- Server-sent execution stream.
+- Provider routing primitives.
+- Execution receipt structure.
+- Policy and routing metadata.
+- Local fake-provider validation path.
+- Integration contract documentation.
 
-## Sellable MVP Completion Gate
+The foundation should remain focused on control, routing, observability, cost/waste signal, policy explanation, and prompt privacy posture.
 
-The MVP is sellable and demo-ready when all of the following are true.
+The MVP should not expand into analytics storage, billing, team management, marketplace workflows, advanced policy DSL, replay, semantic transactions, or long-term telemetry warehousing.
 
-### Demo and Validation
+## Gate Criteria
 
-- [ ] One deterministic end-to-end demo flow runs locally using the two-service Docker stack.
-- [ ] The demo uses the fake/deterministic provider; no real provider credentials required.
-- [ ] No unresolved local validation blockers remain.
-- [ ] Demo is reproducible from documented steps without manual intervention beyond Docker Desktop availability.
+### 1. Execution Receipt
 
-### Execution Receipt
+- [ ] Execution receipt includes `executionId`, `correlationId`, `outcome`, provider attempts, policy reason, and cost/waste fields.
+  - Status: Needs demo validation.
+  - Validation: Verify against the final SSE event shape documented in the integration contract.
 
-- [ ] The `final` SSE event carries `executionId`, `correlationId`, `provider`, `model`, and `usage` (inputTokens, outputTokens, totalTokens). — *Available; verify against current final SSE event output before marking complete.*
-- [ ] `policyReason` is returned in the receipt as a plain-English string describing the control decision applied: provider skipped, budget enforced, or route selected. — *Planned; see parent epic arbiter-systems/control-plane-api#133. See linked tracking issue.*
-- [ ] Receipt is readable by a non-engineer in a demo context without additional tooling.
+- [ ] Receipt output can explain what happened during the execution without requiring source-code inspection.
+  - Status: Needs demo validation.
+  - Validation: Demo script includes a receipt walkthrough where the control decision, provider behavior, and estimated waste/cost impact can be explained from the final event output.
 
-### Cost and Waste Controls
+- [ ] Final SSE event and receipt documentation agree on field names, required fields, optional fields, and buyer-visible meaning.
+  - Status: Artifact exists; verification pending.
+  - Dependency: Re-check after final receipt contract fields are stable.
 
-- [ ] **Unhealthy provider skip demonstrated:** when a provider is not ready, the routing layer skips it and the receipt reflects the decision. — *Tracked in arbiter-systems/control-plane-api#151.*
-- [ ] **Retry suppression demonstrated:** unnecessary re-attempts against a known-failing provider are blocked at the routing layer rather than forwarded. — *See linked tracking issue.*
-- [ ] **Budget enforcement or route downgrade demonstrated:** an execution is blocked or redirected when a budget ceiling or route preference policy applies. — *Planned; see parent epic arbiter-systems/control-plane-api#133. See linked tracking issue.*
-- [ ] **Cost signal in demo output:** `costAvoided` or equivalent waste-reduction signal appears in demo output, showing estimated cost avoided by a routing or enforcement decision. — *Planned; see parent epic arbiter-systems/control-plane-api#133. See linked tracking issue.*
+- [ ] Receipt includes a plain-English policy/control explanation.
+  - Status: Implementation pending.
+  - Tracking: No dedicated issue yet; tracked under #133 until split out.
+  - Dependency: Unblocks demo script, AI Waste Report, Policy Explainer language, and ROI/integration docs.
 
-### Privacy and Overhead Posture
+### 2. Cost and Waste Control
 
-- [ ] **Prompt privacy demonstrated:** raw prompts do not appear in logs or receipts by default; execution receipts show structured metadata only. — *Requires explicit validation in demo logs and documented demo output; referenced docs describe the intended default but do not include a dedicated privacy-posture demo step.*
-- [ ] **Provider payload pass-through demonstrated:** `prompt`, `model`, and `maxTokens` are forwarded to the provider unchanged; receipt confirms no token overhead was added by Arbiter. — *Tracked in arbiter-systems/control-plane-api#149 and #150.*
-- [ ] **Arbiter control overhead separated from provider latency:** `arbiterControlLatencyMs` and `providerLatencyMs` appear in the receipt or equivalent timing is shown in demo output, isolating Arbiter coordination cost from provider/model time. — *Planned; tracked in arbiter-systems/control-plane-api#149 and #153.*
+- [ ] Retry suppression is demonstrated for a retry-heavy or provider-failure scenario.
+  - Status: Implementation pending.
+  - Tracking: Tracked by control-plane-api#309.
+  - Validation: Local demo output shows a retry was suppressed and the receipt records the avoided attempt.
 
-### Docs and Site
+- [ ] Provider readiness / skip routing is demonstrated.
+  - Status: Implementation pending or in progress.
+  - Tracking: Tracked by #151.
+  - Validation: Local demo output shows an unhealthy or unavailable provider was skipped before execution was attempted.
 
-- [ ] Integration guide exists and is accurate for the MVP contract: endpoint, request shape, response shape, receipt fields. — *[Integration Contract](./mvp-execution-gateway-integration-contract.md) covers this; verify against final receipt fields before marking complete.*
-- [ ] An AI Waste Report or equivalent demo summary document exists that maps demo execution receipt output to buyer pain: waste avoided, cost signal, policy reason applied. — *See linked tracking issue.*
-- [ ] Site or docs include an integration overview or ROI-framing page a buyer can read without source code access. — *See linked tracking issue.*
-- [ ] All published docs follow [MVP Claim Guardrails](./mvp-claim-guardrails.md) language.
+- [ ] Budget enforcement is demonstrated by blocking an execution that exceeds a configured ceiling.
+  - Status: Implementation pending.
+  - Tracking: No dedicated issue yet; tracked under #133 until split out.
+  - Validation: Receipt or final event must show that the execution was blocked due to a budget policy.
+
+- [ ] Route downgrade is demonstrated by selecting a lower-cost provider or execution path when policy allows.
+  - Status: Implementation pending.
+  - Tracking: No dedicated issue yet; tracked under #133 until split out.
+  - Validation: Receipt or final event must show the selected lower-cost route and the reason it was selected.
+
+- [ ] Estimated `costAvoided` is present where a retry, provider attempt, budget block, or route downgrade avoids unnecessary spend.
+  - Status: Implementation pending.
+  - Tracking: No dedicated issue yet; tracked under #133 until split out.
+  - Validation: Receipt must include estimated avoided cost or avoided attempt signal for at least one deterministic demo scenario.
+
+- [ ] Cost/waste evidence is represented in buyer-facing language.
+  - Status: Blocked by retry suppression, provider skip routing, budget enforcement or route downgrade, and `costAvoided`.
+  - Validation: Demo output can show executions controlled, retries suppressed, providers skipped, attempts avoided, estimated cost avoided, and budget blocks.
+
+### 3. Policy and Governance Explanation
+
+- [ ] Policy decision reason is included in receipt output.
+  - Status: Implementation pending.
+  - Tracking: No dedicated issue yet; tracked under #133 until split out.
+  - Dependency: Unblocks Policy Explainer, demo script, AI Waste Report, and ROI/integration docs.
+
+- [ ] Policy explanation is written in plain English.
+  - Status: Implementation pending.
+  - Validation: A technical buyer can understand why Arbiter allowed, blocked, skipped, retried, suppressed, or downgraded an execution path from receipt output.
+
+- [ ] Policy explanation distinguishes between routing decisions, budget decisions, retry decisions, and privacy posture.
+  - Status: Implementation pending.
+  - Validation: Demo scenarios should show at least two different control reasons and avoid collapsing them into generic “policy applied” language.
+
+### 4. Prompt Privacy
+
+- [ ] Prompt privacy posture is demonstrated in local validation output.
+  - Status: Validation gap.
+  - Validation: Structured logs from a local validation run must show raw prompts are not stored by default.
+
+- [ ] Documentation states the default prompt privacy posture.
+  - Status: Artifact exists; verification pending.
+  - Validation: Confirm docs describe metadata-first behavior and avoid implying full prompt capture unless explicitly enabled.
+
+- [ ] Receipt or demo output can communicate privacy posture without exposing raw prompt content.
+  - Status: Needs demo validation.
+  - Validation: Demo output should show privacy posture using metadata, not raw prompt storage.
+
+### 5. Demo and Validation
+
+- [ ] Local fake-provider demo flow completes successfully.
+  - Status: Needs demo validation.
+  - Validation: Demo scenario runs locally and produces deterministic output.
+
+- [ ] Final SSE event includes required receipt fields.
+  - Status: Needs demo validation.
+  - Validation: Final event includes the fields required by the integration contract and receipt documentation.
+
+- [ ] Structured validation output includes provider skip, retry suppression, budget, and privacy evidence where applicable.
+  - Status: Needs demo validation.
+  - Validation: Use structured local output instead of ad hoc console interpretation.
+
+- [ ] Demo script includes before/after behavior.
+  - Status: Implementation pending.
+  - Validation: Scenario should show behavior without Arbiter control versus behavior with Arbiter control.
+
+- [ ] Demo script shows the following buyer-visible outcomes:
+  - executions controlled
+  - retries suppressed
+  - providers skipped
+  - attempts avoided
+  - estimated cost avoided
+  - budget blocks
+  - prompt privacy posture
+
+### 6. Docs and Site
+
+- [ ] AI Waste Report demo summary exists.
+  - Status: Implementation pending.
+  - Tracking: No dedicated issue yet; tracked under #133 until split out.
+  - Dependency: Blocked by provider skip routing, retry suppression, budget enforcement or route downgrade, and `costAvoided`.
+  - Validation: Report includes executions controlled, retries suppressed, providers skipped, attempts avoided, estimated cost avoided, budget blocks, and prompt privacy posture.
+
+- [ ] Integration guide reflects final receipt fields.
+  - Status: Artifact exists; field verification pending.
+  - Dependency: Re-check after final receipt contract fields are stable.
+  - Validation: Integration guide must match the final SSE event and receipt contract.
+
+- [ ] Site or docs include an integration overview / ROI-framing page.
+  - Status: Implementation pending.
+  - Tracking: No dedicated issue yet; tracked under #133 until split out.
+  - Dependency: Blocked by final receipt fields and AI Waste Report content.
+  - Validation: Page should explain how Arbiter controls execution waste, provider failure behavior, budget policy, and privacy posture.
+
+- [ ] Buyer-facing language avoids overclaiming.
+  - Status: Needs review.
+  - Validation: Claims should use “targets,” “can reduce,” or “helps reduce” language rather than guaranteed savings.
 
 ## Recommended Implementation Order
 
-Full scope and issue tracking: arbiter-systems/control-plane-api#133.
+1. Provider readiness / skip routing
+   - Tracking: #151.
+   - Unblocks provider skip evidence and downstream waste/cost demonstrations.
 
-Suggested order for remaining gate items:
+2. Retry suppression / provider guardrails
+   - Tracking: control-plane-api#309.
+   - Unblocks retries suppressed, attempts avoided, and retry-related cost avoided evidence.
 
-1. **Cached provider readiness and unhealthy provider skip** — arbiter-systems/control-plane-api#151. Unblocks the retry suppression and unhealthy provider skip demo gates.
-2. **Provider payload pass-through validation and overhead measurement** — arbiter-systems/control-plane-api#149, #150, #153. Unblocks the pass-through posture and timing demo gates.
-3. **`policyReason` receipt field** — Plain-English control reason in the `final` event. Unblocks receipt readability and the demo script. *See linked tracking issue.*
-4. **Budget enforcement or route downgrade** — `budgetHint` enforcement or `routePreference` application. Unblocks the budget block demo gate. *See linked tracking issue.*
-5. **`costAvoided` receipt field or equivalent waste signal** — Estimated cost avoided by a routing or enforcement decision. Unblocks the cost signal demo gate. *See linked tracking issue.*
-6. **AI Waste Report or demo receipt summary** — Written after the receipt fields above are available; ties demo output to buyer pain. *See linked tracking issue.*
-7. **Integration overview and ROI-framing page** — Site or docs update; follows AI Waste Report and receipt field completion. *See linked tracking issue.*
+3. `policyReason` receipt field
+   - Tracking: No dedicated issue yet; tracked under #133 until split out.
+   - Unblocks the demo script, Policy Explainer language, AI Waste Report, and ROI/integration docs.
+
+4. Budget enforcement
+   - Tracking: No dedicated issue yet; tracked under #133 until split out.
+   - Depends on enough routing/readiness behavior to produce a meaningful demo path.
+   - Should be independently demonstrated from route downgrade.
+
+5. Route downgrade
+   - Tracking: No dedicated issue yet; tracked under #133 until split out.
+   - Independent from `policyReason` implementation, but should be demoed after provider readiness behavior is stable.
+   - Should be independently demonstrated from budget enforcement.
+
+6. `costAvoided` receipt field
+   - Tracking: No dedicated issue yet; tracked under #133 until split out.
+   - Depends on retry suppression, provider skip, budget block, or route downgrade behaviors producing measurable avoided attempts or estimated savings.
+
+7. AI Waste Report
+   - Tracking: No dedicated issue yet; tracked under #133 until split out.
+   - Blocked by steps 1–6.
+
+8. Integration overview / ROI page
+   - Tracking: No dedicated issue yet; tracked under #133 until split out.
+   - Blocked by final receipt fields and AI Waste Report content.
 
 ## Tracking Notes
 
-arbiter-systems/control-plane-api#133 is the parent sellable MVP epic. Each unresolved checklist item above should have a dedicated implementation or docs issue linked to that epic. Items marked *See linked tracking issue* in this document do not yet have one. Create a dedicated issue before starting implementation work on those items so scope and acceptance criteria are clear before execution begins.
+Some gate items have dedicated implementation issues; others are still tracked under the MVP parent epic until split out.
 
-## Post-MVP: Deferred Work
+- Provider readiness / skip routing is tracked by #151.
+- Retry suppression / provider guardrails are tracked by control-plane-api#309.
+- Items without dedicated issues remain tracked under #133 and should be split into focused follow-up issues before implementation begins.
+- Checklist items should not use placeholder text such as “See linked tracking issue.” Each item should either reference a concrete issue or explicitly state that it is still tracked under #133.
+- Checklist items should keep requirement, status, validation, and dependency information separate so the gate remains scannable.
 
-The following are out of MVP scope. They should not be conflated with MVP completion.
+## Post-MVP Deferred Work
 
-A minimal demo UI or static receipt view scoped only to demo clarity is not excluded. What is deferred is the full customer/operator console and all advanced console workflows listed below.
+The following work is intentionally deferred and should not block the sellable MVP gate:
 
-| Area | Examples |
+| Deferred Area | Reason |
 |---|---|
-| Semantic execution primitives | Semantic transaction model, semantic routing, semantic replay |
-| Replay engine | Execution replay, replay-based deduplication |
-| Billing integration | Stripe, subscription management, per-tenant billing |
-| Analytics warehouse | Long-term trace storage, cost dashboards, usage analytics |
-| Compliance suite | Audit automation, regulatory reporting, compliance workflow |
-| Advanced policy engine | Policy-as-code, policy versioning, complex rule evaluation |
-| Marketplace | Provider marketplace, policy marketplace |
-| Full customer/operator console | Execution log viewer, policy editor, advanced operational screens, team and customer onboarding UI |
-| Public customer onboarding | Auth flows, team management, API key provisioning |
-| Client SDK | SDK wrapper, OpenAI-compatible proxy endpoint |
-| Production infrastructure | ECS, Kubernetes, multi-region, IaC budget resources |
+| Billing and subscriptions | Not needed to prove execution control value. |
+| Team management | Not needed for deterministic MVP demo. |
+| Long-term analytics storage | MVP should avoid analytics/data warehouse scope. |
+| Full dashboard analytics | Demo summaries and receipts are sufficient for MVP. |
+| Provider marketplace | Not needed for execution control proof. |
+| Replay engine | Later-stage platform capability. |
+| Semantic transactions | Later-stage architecture capability. |
+| Advanced policy DSL | MVP should use simple policy/routing behavior. |
+| Multi-region routing | Not required for initial buyer validation. |
+| Compliance suite | Privacy posture and governance receipts are enough for MVP. |
+| Full prompt capture/search | Conflicts with metadata-first privacy posture. |
 
-## Related Docs and Issues
+## Completion Standard
 
-- [MVP Backend Baseline](./mvp-backend-baseline.md)
-- [MVP Execution Gateway Integration Contract](./mvp-execution-gateway-integration-contract.md)
-- [MVP Claim Guardrails](./mvp-claim-guardrails.md)
-- [MVP Cost Controls](./mvp-cost-controls.md)
-- [Sample Customer AI Waste Scenarios](./sample-customer-ai-waste-scenarios.md)
-- [Local Two-Service Docker Validation - 2026-05-16](./local-two-service-validation-results.md)
-- [Web and Console Timing Checklist](../planning/web-console-timing.md)
-- Sellable MVP epic: arbiter-systems/control-plane-api#133
-- Overhead measurement: arbiter-systems/control-plane-api#149
-- Provider payload pass-through: arbiter-systems/control-plane-api#150
-- Cached provider readiness: arbiter-systems/control-plane-api#151
-- Low-overhead execution path docs: arbiter-systems/control-plane-api#153
+The sellable MVP is complete when Arbiter can demonstrate the following in a deterministic local or controlled demo flow:
+
+1. An AI execution is controlled through the Arbiter path.
+2. An unhealthy or unavailable provider can be skipped.
+3. An unnecessary retry can be suppressed.
+4. A budget policy can block execution or a route policy can downgrade execution.
+5. Receipt output explains the result in buyer-readable language.
+6. Estimated avoided waste or cost is shown where applicable.
+7. Prompt privacy posture is visible without raw prompt storage.
+8. Docs explain integration, receipt fields, control behavior, and ROI framing without overclaiming.
+
+The MVP is not complete merely because implementation exists. It is complete when the implementation, validation output, receipt evidence, and buyer-facing explanation all agree.
