@@ -49,13 +49,15 @@ graph TD
   hosted --> pilot
 ```
 
-Completed foundation nodes are described in the dependency narrative and the cross-repo issue index.
+Completed foundation nodes and partial receipt/cost-control progress are described in the dependency narrative and the cross-repo issue index.
 
 The exact sequencing between some receipt, cost, privacy, and docs tasks is not fully specified beyond the recommended implementation order in the completion gate. This diagram uses a conservative prerequisite order: backend and service contract first, validated local flow next, buyer-facing receipt fields before demo/site claims, then console/hosted demo work after backend evidence exists.
 
 ## Dependency Narrative
 
-**Backend prerequisites:** This dependency covers Control Plane execution control: cached provider readiness, unhealthy provider skip, retry suppression, pass-through validation, overhead measurement, `policyReason`, budget or route downgrade behavior, and `costAvoided` or equivalent waste signal. Current status: in progress. It enables readable receipts, cost/waste demonstrations, and the site/docs/demo gate; without it, buyer-facing MVP claims remain incomplete.
+Read this section as: foundation, local validation, and base receipt identifiers are complete; backend execution control is in progress for retry suppression, provider readiness/skip, overhead measurement, and pass-through validation; `policyReason`, budget enforcement/route downgrade, `costAvoided`, privacy demo validation, AI Waste Report, site/docs, console, and hosted demo remain planned.
+
+**Backend prerequisites:** This dependency covers Control Plane execution control: cached provider readiness, unhealthy provider skip, retry suppression, pass-through validation, overhead measurement, `policyReason`, budget or route downgrade behavior, and `costAvoided` or equivalent waste signal. Current status: in progress, with receipt field scaffolding, retry suppression structure, and provider readiness routing partially complete. Base receipt identifiers (`executionId`, `correlationId`, `provider`, `model`, `usage`) are available and verified in the final SSE event. `policyReason` and `costAvoided` remain planned. It enables readable receipts, cost/waste demonstrations, and the site/docs/demo gate; without it, buyer-facing MVP claims remain incomplete.
 
 **AI Execution Service prerequisites:** This dependency covers the internal execution boundary, fake/deterministic provider flow, readiness endpoint, stable streaming response behavior, and correlation/execution ID propagation. Current status: complete for the documented local foundation and planned where future receipt or timing fields depend on upstream Control Plane contract work. It enables the local two-service validation path and supports the integration contract used by adopters.
 
@@ -67,7 +69,7 @@ The exact sequencing between some receipt, cost, privacy, and docs tasks is not 
 
 **Hosted demo gate:** This dependency covers moving from local deterministic validation to a hosted demo that is reproducible, buyer-readable, and consistent with MVP claim guardrails. Current status: planned. It is enabled by completed local validation, receipt fields, cost/waste controls, privacy/overhead validation, and docs/site readiness.
 
-**Security/privacy gate:** This dependency covers prompt privacy posture, metadata-first receipts, no raw prompt logging by default, and separation of Arbiter control overhead from provider/model latency. Current status: planned for explicit demo validation, with default privacy posture described in the integration contract. It enables trustworthy demo output and prevents site/docs claims from overstating MVP behavior.
+**Security/privacy gate:** This dependency covers prompt privacy posture, metadata-first receipts, no raw prompt logging by default, and separation of Arbiter control overhead from provider/model latency. Current status: planned for explicit demo validation, with default privacy posture described in the integration contract and related overhead measurement (`control-plane-api#149`) and pass-through validation (`control-plane-api#150`) now in progress. It enables trustworthy demo output and prevents site/docs claims from overstating MVP behavior.
 
 ## Deferred / Post-MVP Boundaries
 
@@ -90,9 +92,9 @@ The deferred boundaries come from [`docs/issue-lane-policy.md`](../issue-lane-po
 |---|---|---|---|
 | [`control-plane-api#133`](https://github.com/arbiter-systems/control-plane-api/issues/133) | `control-plane-api` | in progress | Parent sellable MVP epic for the remaining completion gate work. |
 | [`control-plane-api#296`](https://github.com/arbiter-systems/control-plane-api/issues/296) | `control-plane-api` | in progress | AI Execution Firewall MVP release checklist. |
-| [`control-plane-api#149`](https://github.com/arbiter-systems/control-plane-api/issues/149) | `control-plane-api` | planned | Overhead measurement and pass-through posture work referenced by the completion gate and integration contract. |
-| [`control-plane-api#150`](https://github.com/arbiter-systems/control-plane-api/issues/150) | `control-plane-api` | planned | Provider payload pass-through validation referenced by the completion gate and integration contract. |
-| [`control-plane-api#151`](https://github.com/arbiter-systems/control-plane-api/issues/151) | `control-plane-api` | planned | Cached provider readiness and unhealthy provider skip behavior tracked by the completion gate and integration contract. |
+| [`control-plane-api#149`](https://github.com/arbiter-systems/control-plane-api/issues/149) | `control-plane-api` | in progress | Overhead measurement and pass-through posture work referenced by the completion gate and integration contract. |
+| [`control-plane-api#150`](https://github.com/arbiter-systems/control-plane-api/issues/150) | `control-plane-api` | in progress | Provider payload pass-through validation referenced by the completion gate and integration contract. |
+| [`control-plane-api#151`](https://github.com/arbiter-systems/control-plane-api/issues/151) | `control-plane-api` | in progress | Cached provider readiness and unhealthy provider skip behavior tracked by the completion gate and integration contract. |
 | [`control-plane-api#153`](https://github.com/arbiter-systems/control-plane-api/issues/153) | `control-plane-api` | planned | Low-overhead execution path documentation and timing-related receipt posture referenced by the completion gate. |
 | [`.github#35`](https://github.com/arbiter-systems/.github/issues/35) | `.github` | complete | Local two-service MVP validation. |
 | [`.github#36`](https://github.com/arbiter-systems/.github/issues/36) | `.github` | planned | Hosted demo deployment readiness checklist. |
