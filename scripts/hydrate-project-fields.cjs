@@ -571,6 +571,8 @@ function sameValue(type, current, desiredValue) {
   return String(current.value || "") === String(desiredValue || "");
 }
 
+// Maps a configured metadata value to its canonical display name using the local taxonomy.
+// Live project options (fetched via GraphQL) are the final validation gate before mutation.
 function normalizeConfiguredValue(key, rawValue) {
   const config = FIELD_CONFIG[key];
   if (!config) {
@@ -594,6 +596,19 @@ function getSingleSelectOptionId(field, desiredValue) {
     return null;
   }
   return option.id;
+}
+
+function formatOptionList(values) {
+  const formatted = values.filter((value) => String(value || "").trim() !== "").join(", ");
+  return formatted || "(none)";
+}
+
+function formatConfiguredValues(config) {
+  return formatOptionList(Object.values(config.values || {}));
+}
+
+function formatLiveOptions(field) {
+  return formatOptionList((field?.options || []).map((option) => option?.name));
 }
 
 function validateRequiredProjectFields(fields) {
@@ -632,8 +647,18 @@ function getCurrentFieldValue(key, currentByField, fields) {
   return currentByField.get(normalizeName(field.name)) || null;
 }
 
+function getConfiguredFieldName(key, fields) {
+  const field = findFieldByCandidates(fields, FIELD_CONFIG[key].candidates);
+  return field?.name || FIELD_CONFIG[key].candidates[0] || key;
+}
+
+function formatUnchangedNote(fieldName, current) {
+  return `${fieldName}: unchanged (current='${current?.value ?? ""}')`;
+}
+
 function addStatusCandidate(candidates, notes, metadata, labelHints, currentByField, fields) {
   const statusCurrent = getCurrentFieldValue("status", currentByField, fields);
+  const fieldName = getConfiguredFieldName("status", fields);
   if (metadata.explicitKeys.has("status")) {
     candidates.push({ key: "status", value: metadata.values.status, source: "metadata" });
     return;
@@ -646,11 +671,12 @@ function addStatusCandidate(candidates, notes, metadata, labelHints, currentByFi
     candidates.push({ key: "status", value: "Inbox", source: "default" });
     return;
   }
-  notes.push("Status unchanged: existing value preserved");
+  notes.push(formatUnchangedNote(fieldName, statusCurrent));
 }
 
 function addLaneCandidate(candidates, notes, metadata, labelHints, currentByField, fields) {
   const laneCurrent = getCurrentFieldValue("lane", currentByField, fields);
+  const fieldName = getConfiguredFieldName("lane", fields);
   if (metadata.explicitKeys.has("lane")) {
     candidates.push({ key: "lane", value: metadata.values.lane, source: "metadata" });
     return;
@@ -660,12 +686,13 @@ function addLaneCandidate(candidates, notes, metadata, labelHints, currentByFiel
     return;
   }
   if (labelHints.lane && !isEmptyCurrent(laneCurrent)) {
-    notes.push("Lane unchanged: label inference skipped because value already set");
+    notes.push(formatUnchangedNote(fieldName, laneCurrent));
   }
 }
 
 function addProjectPriorityCandidate(candidates, notes, metadata, labelHints, currentByField, fields) {
   const priorityCurrent = getCurrentFieldValue("project_priority", currentByField, fields);
+  const fieldName = getConfiguredFieldName("project_priority", fields);
   if (metadata.explicitKeys.has("project_priority")) {
     candidates.push({ key: "project_priority", value: metadata.values.project_priority, source: "metadata" });
     return;
@@ -675,7 +702,7 @@ function addProjectPriorityCandidate(candidates, notes, metadata, labelHints, cu
     return;
   }
   if (labelHints.priority && !isEmptyCurrent(priorityCurrent)) {
-    notes.push("Priority unchanged: label inference skipped because value already set");
+    notes.push(formatUnchangedNote(fieldName, priorityCurrent));
   }
 }
 
@@ -736,7 +763,7 @@ function planSingleSelectOperation(candidate, config, field, normalizedValue, cu
   const optionId = getSingleSelectOptionId(field, normalizedValue);
   if (!optionId) {
     return {
-      warning: `Unknown single-select option '${normalizedValue}' for field '${field.name}'; skipping`,
+      error: `Single-select option '${normalizedValue}' is not present in the live project field '${field.name}'.\n  Live project options: ${formatLiveOptions(field)}`,
     };
   }
   return {
@@ -755,9 +782,8 @@ function planCandidateOperation(candidate, currentByField, fields) {
   }
   const normalizedValue = normalizeConfiguredValue(candidate.key, candidate.value);
   if (normalizedValue == null) {
-    const allowed = Object.values(config.values || {}).join(", ");
     return {
-      warning: `Unknown single-select option '${candidate.value}' for field '${field.name}'; skipping. Allowed values: ${allowed}`,
+      error: `Unknown single-select option '${candidate.value}' for field '${field.name}'.\n  Configured taxonomy: ${formatConfiguredValues(config)}\n  Live project options: ${formatLiveOptions(field)}`,
     };
   }
   const current = currentByField.get(normalizeName(field.name)) || null;
@@ -778,6 +804,7 @@ function buildHydrationOperations(candidates, currentByField, fields) {
   const operations = [];
   const notes = [];
   const warnings = [];
+  const errors = [];
   for (const candidate of candidates) {
     const result = planCandidateOperation(candidate, currentByField, fields);
     if (result.operation) {
@@ -789,8 +816,11 @@ function buildHydrationOperations(candidates, currentByField, fields) {
     if (result.warning) {
       warnings.push(result.warning);
     }
+    if (result.error) {
+      errors.push(result.error);
+    }
   }
-  return { operations, notes, warnings };
+  return { operations, notes, warnings, errors };
 }
 
 function planHydration(metadata, labelHints, currentByField, fields) {
@@ -800,6 +830,7 @@ function planHydration(metadata, labelHints, currentByField, fields) {
     operations: operationPlan.operations,
     notes: [...candidatePlan.notes, ...operationPlan.notes],
     warnings: operationPlan.warnings,
+    errors: operationPlan.errors,
   };
 }
 
@@ -858,6 +889,8 @@ function emitInputWarnings(metadata, labelHints) {
   }
 }
 
+// GitHub GraphQL is the authoritative source for field IDs and single-select option IDs.
+// This script is the orchestration layer; it never hardcodes GraphQL node IDs.
 async function fetchProjectMetadata(token, targetProject) {
   const projectMetaQuery = `
     query ProjectMeta($org: String!, $number: Int!) {
@@ -998,14 +1031,21 @@ async function addProjectItemIfNeeded({ token, event, project, requestedProjectR
   };
 }
 
-async function ensureProjectItem({ token, event, project, requestedProjectRef, dryRun }) {
+async function loadProjectItemContext({ token, event, project }) {
   const issueData = await fetchIssueProjectItems(token, event.issueNodeId);
   const projectItems = issueData?.node?.projectItems?.nodes || [];
   const matchingItem = projectItems.find((entry) => entry?.project?.id === project.id) || null;
 
-  let itemId = matchingItem?.id || null;
-  let currentByField = matchingItem ? readCurrentFieldValues(matchingItem.fieldValues?.nodes || []) : new Map();
+  return {
+    itemId: matchingItem?.id || null,
+    currentByField: matchingItem ? readCurrentFieldValues(matchingItem.fieldValues?.nodes || []) : new Map(),
+  };
+}
 
+async function ensureProjectItem({ token, event, project, requestedProjectRef, dryRun, itemContext = null }) {
+  const context = itemContext || (await loadProjectItemContext({ token, event, project }));
+  let itemId = context.itemId;
+  let currentByField = context.currentByField;
   if (!itemId) {
     const addedContext = await addProjectItemIfNeeded({
       token,
@@ -1028,7 +1068,9 @@ function createHydrationPlan({ project, metadata, labelHints, currentByField }) 
   return planHydration(metadata, labelHints, currentByField, fields);
 }
 
-function emitHydrationPlan(itemId, plan) {
+function emitHydrationPlan(itemId, plan, { dryRun, repoFullName, issueNumber }) {
+  console.log(`[${dryRun ? "dry-run" : "info"}] issue=${repoFullName}#${issueNumber}`);
+
   if (itemId) {
     console.log(`[info] project item id: ${itemId}`);
   } else {
@@ -1041,6 +1083,16 @@ function emitHydrationPlan(itemId, plan) {
 
   for (const warning of plan.warnings) {
     console.warn(`[warn] ${warning}`);
+  }
+
+  for (const error of plan.errors) {
+    console.error(`[error] ${error}`);
+  }
+}
+
+function markFailedIfPlanHasErrors(plan) {
+  if (plan.errors.length > 0) {
+    process.exitCode = 1;
   }
 }
 
@@ -1176,12 +1228,10 @@ async function run() {
     metadata: planningInput.metadata,
   });
 
-  const itemContext = await ensureProjectItem({
+  let itemContext = await loadProjectItemContext({
     token: projectContext.token,
     event,
     project: projectContext.project,
-    requestedProjectRef: projectContext.requestedProjectRef,
-    dryRun: context.dryRun,
   });
 
   const plan = createHydrationPlan({
@@ -1191,10 +1241,31 @@ async function run() {
     currentByField: itemContext.currentByField,
   });
 
-  emitHydrationPlan(itemContext.itemId, plan);
+  emitHydrationPlan(itemContext.itemId, plan, {
+    dryRun: context.dryRun,
+    repoFullName: event.repoFullName,
+    issueNumber: event.issueNumber,
+  });
 
+  if (!context.dryRun && plan.errors.length > 0) {
+    throw new Error(`[error] Validation failed:\n${plan.errors.map((error) => `- ${error}`).join("\n")}`);
+  }
+
+  itemContext = await ensureProjectItem({
+    token: projectContext.token,
+    event,
+    project: projectContext.project,
+    requestedProjectRef: projectContext.requestedProjectRef,
+    dryRun: context.dryRun,
+    itemContext,
+  });
+
+  // Dry-run intentionally emits the full intended plan, including valid mutation previews,
+  // even when validation errors exist. No mutations run in dry-run; failures are reflected
+  // by setting exitCode after all output has been emitted.
   if (plan.operations.length === 0) {
     console.log("[summary] no field updates required");
+    markFailedIfPlanHasErrors(plan);
     return;
   }
 
@@ -1209,6 +1280,9 @@ async function run() {
 
   console.log(`[summary] mode=${context.dryRun ? "dry-run" : "write"}`);
   console.log(`[summary] planned updates=${plan.operations.length}`);
+  if (context.dryRun && plan.errors.length > 0) {
+    markFailedIfPlanHasErrors(plan);
+  }
 }
 
 function runSelfTests() {
@@ -1408,9 +1482,11 @@ function runSelfTests() {
   assert.equal(plan.operations.some((op) => op.key === "lane"), false);
   assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
   assert.equal(plan.operations.some((op) => op.key === "status"), false);
+  assert.equal(plan.errors.length, 0);
 
   plan = planHydration(metadataMissing, { lane: null, priority: null, status: null, warnings: [] }, new Map(), fields);
   assert.equal(plan.operations.some((op) => op.key === "status" && op.value === "Inbox" && op.source === "default"), true);
+  assert.equal(plan.errors.length, 0);
 
   plan = planHydration(
     {
@@ -1430,6 +1506,7 @@ function runSelfTests() {
   assert.equal(plan.operations.some((op) => op.key === "lane" && op.source === "metadata"), true);
   assert.equal(plan.operations.some((op) => op.key === "project_priority" && op.source === "metadata"), true);
   assert.equal(plan.operations.some((op) => op.key === "workstream" && op.source === "metadata"), true);
+  assert.equal(plan.errors.length, 0);
 
   plan = planHydration(
     {
@@ -1468,11 +1545,13 @@ function runSelfTests() {
   );
   assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
   assert.equal(
-    plan.warnings.some((warning) =>
-      warning.includes("Unknown single-select option 'Critical' for field 'Project Priority'; skipping"),
+    plan.errors.some((error) =>
+      error.includes("Unknown single-select option 'Critical' for field 'Project Priority'."),
     ),
     true,
   );
+  assert.equal(plan.errors.some((error) => error.includes("Configured taxonomy")), true);
+  assert.equal(plan.errors.some((error) => error.includes("Live project options")), true);
 
   plan = planHydration(
     {
@@ -1488,11 +1567,13 @@ function runSelfTests() {
   );
   assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
   assert.equal(
-    plan.warnings.some((warning) =>
-      warning.includes("Unknown single-select option 'P1' for field 'Project Priority'; skipping"),
+    plan.errors.some((error) =>
+      error.includes("Unknown single-select option 'P1' for field 'Project Priority'."),
     ),
     true,
   );
+  assert.equal(plan.errors.some((error) => error.includes("Configured taxonomy")), true);
+  assert.equal(plan.errors.some((error) => error.includes("Live project options")), true);
 
   plan = planHydration(
     {
@@ -1531,11 +1612,32 @@ function runSelfTests() {
   );
   assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
   assert.equal(
-    plan.warnings.some((warning) =>
-      warning.includes("Unknown single-select option 'High' for field 'Project Priority'; skipping"),
+    plan.errors.some((error) =>
+      error.includes("Single-select option 'High' is not present in the live project field 'Project Priority'."),
     ),
     true,
   );
+  assert.equal(plan.errors.some((error) => error.includes("Live project options: Medium")), true);
+
+  const emptyOptionFields = fields.map((field) =>
+    field.name === "Project Priority"
+      ? { ...field, options: [] }
+      : field,
+  );
+  plan = planHydration(
+    {
+      found: true,
+      values: { project_priority: "High" },
+      explicitKeys: new Set(["project_priority"]),
+      warnings: [],
+      unknownKeys: [],
+    },
+    { lane: null, priority: null, status: null, warnings: [] },
+    new Map(),
+    emptyOptionFields,
+  );
+  assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
+  assert.equal(plan.errors.some((error) => error.includes("Live project options: (none)")), true);
 
   console.log("[self-test] ok");
 }
