@@ -24,9 +24,11 @@ Labels remain useful, but they serve a different role. Labels are taxonomy, rout
 | Confidence | Single select | `high`, `medium`, `low` | Human with triage support | Read/write |
 | Implementation Readiness | Single select | `not-ready`, `needs-clarification`, `ready` | Human with triage support | Read/write |
 | Scope Risk | Single select | `low`, `medium`, `high` | Human with triage support | Read/write |
-| Workstream | Single select | `GitHub Project Management`, `MVP Execution`, `Security & Compliance`, `Documentation & Site`, `Infrastructure & Ops` | Human | Read only |
+| Workstream | Single select | `execution`, `observability`, `resilience`, `policy-governance`, `security-privacy`, `cost-control`, `demo-readiness`, `console`, `site-docs`, `repo-operations`, `architecture` | Human | Read only |
 
 Field naming note: legacy references to a plain `Priority` field should be interpreted as `Project Priority`.
+
+Repo field note: the `Repo` allowed values list is Human-maintained and must be updated when repositories are added to or removed from organization project scope.
 
 ## Issue Lifecycle States
 
@@ -60,11 +62,17 @@ When the `Phase` field and a `phase/*` label disagree, the Project field wins. U
 
 Use `Workstream` to group related issues across repositories when the execution context is broader than a single repo or component:
 
-- `GitHub Project Management`: GitHub Project setup, triage operations, policy docs, label and workflow governance.
-- `MVP Execution`: Direct MVP delivery work across implementation repos needed for near-term demo or customer-pilot outcomes.
-- `Security & Compliance`: Security posture, dependency vulnerability handling, branch protections, provenance, and audit-related process work.
-- `Documentation & Site`: Public docs, project documentation, shared templates, and buyer-facing site or documentation support work.
-- `Infrastructure & Ops`: Cross-repo automation, repo operations, workflow wrappers, CI-facing policy support, and non-runtime operational scaffolding.
+- `execution`: Core runtime and service implementation work on the MVP delivery path, excluding ops, docs, security, or cross-cutting concerns covered by other `Workstream` values.
+- `observability`: Logging, metrics, tracing, and system visibility work.
+- `resilience`: Fault tolerance, retry logic, failure handling, and reliability work.
+- `policy-governance`: Policy enforcement, access controls, audit processes, governance rules, and policy decision records that document the rationale behind governance choices.
+- `security-privacy`: Security posture, dependency vulnerability handling, branch protections, provenance, and privacy-related work.
+- `cost-control`: Infrastructure cost tracking, resource efficiency, spend governance, AI execution waste reduction, and budget guardrails for agent-driven or automated workloads.
+- `demo-readiness`: Work required to reach a buyer-facing or hosted-demo checkpoint.
+- `console`: Arbiter console UI features, API surface, and console-specific implementation work.
+- `site-docs`: Public docs, buyer-facing site, shared templates, and documentation support work.
+- `repo-operations`: Cross-repo automation, GitHub Project setup, triage operations, policy docs, label and workflow governance.
+- `architecture`: System design decisions, cross-repo structural work, and foundational technical direction.
 
 `Workstream` is human-assigned. Agents should read `Workstream` for scope context only and should not autonomously change it.
 
@@ -91,7 +99,7 @@ Milestone naming and release-tag conventions are defined in [Milestone and relea
 | View | Purpose | Filter | Group by | Sort |
 |---|---|---|---|---|
 | Active MVP | Daily working view for approved MVP issues. | `Lane = active-mvp` and `Status != Done` and `Status != Deferred` and `Status != Do Not Implement Yet` | `Repo` | `Project Priority`, `Last Reviewed` |
-| Ready for Codex | Implementation queue for issues that are specified and approved. | `Lane = active-mvp` and `Status = Ready` and `Implementation Readiness = ready` and `Agent != Claude` | `Repo` | `Project Priority`, `Confidence` |
+| Ready for Codex | Implementation queue for issues that are specified and approved. | `Lane = active-mvp` and `Status = Ready` and `Implementation Readiness = ready` and (`Agent = Codex` or `Agent = mixed` or `Agent = none`) | `Repo` | `Project Priority`, `Confidence` |
 | Claude Review Queue | Review-only queue for architecture or diff review. | `Status = Review` and (`Agent = Claude` or `Agent = mixed`) | `Repo` | `Last Reviewed` |
 | Blocked | Surface blockers that need human action or dependency resolution. | `Status = Blocked` | `Blocked By` | `Last Reviewed` |
 | Security / Hosted Demo Gates | Track issues that gate hosted-demo and customer-pilot readiness. | `Release Gate = hosted-demo` or `Release Gate = customer-pilot` | `Release Gate` | `Project Priority`, `Repo` |
@@ -122,13 +130,13 @@ Milestone naming and release-tag conventions are defined in [Milestone and relea
 | Phase | Claude, Codex, Copilot | Read | Treat as the authoritative delivery phase. Agents may recommend Phase changes, but they must not autonomously mutate Phase unless explicitly directed by a Human owner. |
 | Lane | Claude, Codex, Copilot | Read | Treat as Human-controlled scope authority. |
 | Project Priority | Claude, Codex, Copilot | Read | Use for ordering context; do not self-escalate Project Priority without Human input. |
-| Status | Claude, Codex, Copilot | Read/Write | When scoped by the user, agents may move active work among `In Progress`, `Review`, and `Blocked`. Agents may recommend `Ready`, but Human owners approve `Ready` transitions. |
-| Implementation Order | Claude, Codex, Copilot | Read | Use for sequencing context only; do not autonomously reorder work. |
+| Status | Claude, Codex, Copilot | Read/Write | Agents may write Status only for user-scoped, human-approved active work. Permitted write transitions: `In Progress`, `Review`, and `Blocked`. Agents may recommend `Ready` but must not apply it; Human owners approve all `Ready` transitions. |
+| Implementation Order | Claude, Codex, Copilot | Read | Use for within-lane sequencing context only; Implementation Order is local to a lane, not a global priority rank. Do not autonomously reorder work. |
 | Blocked By | Claude, Codex, Copilot | Read/Write | Record concrete blockers with repo-qualified issue references where possible, but keep the canonical blocking reason or link in the issue body or comments as required by [issue-lane-policy.md](../issue-lane-policy.md#lane-and-status-definitions). |
 | Release Gate | Claude, Codex, Copilot | Read | Use to understand milestone pressure, not to broaden scope. |
 | Validation Command | Codex | Read/Write | Keep aligned with repo-local validation actually run or required. |
 | Agent | Claude, Codex, Copilot | Write | Record the current execution or review owner when helpful. |
-| Last Reviewed | Claude, Codex, Copilot | Write | Update when triage, implementation, or review materially refreshes the issue state. |
+| Last Reviewed | Claude, Codex, Copilot | Write | Update only when the agent has performed triage, implementation, or review work on the issue in the current session. Do not update as a side effect of reading or scope evaluation. |
 | Confidence | Claude, Codex, Copilot | Read/Write | Lower confidence when acceptance criteria, dependencies, or docs are unclear. |
 | Implementation Readiness | Claude, Codex, Copilot | Read/Write | Use `needs-clarification` when issue scope is not safe to implement yet. |
 | Scope Risk | Claude, Codex, Copilot | Read/Write | Raise to `high` when cross-repo drift or scope expansion is likely. |
