@@ -79,7 +79,7 @@ implementation_readiness: ready
 scope_risk: medium
 confidence: high
 agent: Codex
-workstream: repo-operations
+workstream: GitHub Project Management
 validation_command: manual review only
 blocked_by:
 implementation_order:
@@ -120,7 +120,9 @@ Allowed metadata values:
 - `scope_risk`: `low`, `medium`, `high`
 - `confidence`: `high`, `medium`, `low`
 - `agent`: `none`, `Codex`, `Claude`, `Copilot`, `mixed`
-- `workstream`: `execution`, `observability`, `resilience`, `policy-governance`, `security-privacy`, `cost-control`, `demo-readiness`, `console`, `site-docs`, `repo-operations`, `architecture`
+- `workstream`: `GitHub Project Management`, `MVP Execution`, `Security & Compliance`, `Documentation & Site`, `Infrastructure & Ops`
+
+Do not use lowercase label/taxonomy values such as `repo-operations`, `console`, `site-docs`, or `security-privacy` in hidden metadata unless the live GitHub Project Workstream options are migrated to those values.
 
 `Project Priority` uses `High` / `Medium` / `Low` values, not `P1` / `P2` / `P3`.
 
@@ -144,7 +146,7 @@ If multiple conflicting lane, status, or priority labels are present, inference 
 
 - `Status=Inbox` when Status is currently empty and metadata does not explicitly set `status`.
 - `Lane` remains unset unless metadata or label mapping provides a value.
-- `Priority` remains unset unless metadata or label mapping provides a value.
+- `Project Priority` remains unset unless metadata or label mapping provides a value.
 
 ## Mutation Rules
 

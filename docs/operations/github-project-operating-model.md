@@ -24,7 +24,8 @@ Labels remain useful, but they serve a different role. Labels are taxonomy, rout
 | Confidence | Single select | `high`, `medium`, `low` | Human with triage support | Read/write |
 | Implementation Readiness | Single select | `not-ready`, `needs-clarification`, `ready` | Human with triage support | Read/write |
 | Scope Risk | Single select | `low`, `medium`, `high` | Human with triage support | Read/write |
-| Workstream | Single select | `execution`, `observability`, `resilience`, `policy-governance`, `security-privacy`, `cost-control`, `demo-readiness`, `console`, `site-docs`, `repo-operations`, `architecture` | Human | Read only |
+| Workstream | Single select | `GitHub Project Management`, `MVP Execution`, `Security & Compliance`, `Documentation & Site`, 
+  `Infrastructure & Ops` | Human | Read only |
 
 Field naming note: legacy references to a plain `Priority` field should be interpreted as `Project Priority`.
 
@@ -60,21 +61,19 @@ When the `Phase` field and a `phase/*` label disagree, the Project field wins. U
 
 ## Workstream Values
 
-Use `Workstream` to group related issues across repositories when the execution context is broader than a single repo or component:
+Use `Workstream` to group related issues across repositories when the execution context is broader than a single repo or component.
 
-- `execution`: Core runtime and service implementation work on the MVP delivery path, excluding ops, docs, security, or cross-cutting concerns covered by other `Workstream` values.
-- `observability`: Logging, metrics, tracing, and system visibility work.
-- `resilience`: Fault tolerance, retry logic, failure handling, and reliability work.
-- `policy-governance`: Policy enforcement, access controls, audit processes, governance rules, and policy decision records that document the rationale behind governance choices.
-- `security-privacy`: Security posture, dependency vulnerability handling, branch protections, provenance, and privacy-related work.
-- `cost-control`: Infrastructure cost tracking, resource efficiency, spend governance, AI execution waste reduction, and budget guardrails for agent-driven or automated workloads.
-- `demo-readiness`: Work required to reach a buyer-facing or hosted-demo checkpoint.
-- `console`: Arbiter console UI features, API surface, and console-specific implementation work.
-- `site-docs`: Public docs, buyer-facing site, shared templates, and documentation support work.
-- `repo-operations`: Cross-repo automation, GitHub Project setup, triage operations, policy docs, label and workflow governance.
-- `architecture`: System design decisions, cross-repo structural work, and foundational technical direction.
+Current live Project Workstream values are:
+
+- `GitHub Project Management`: Cross-repo automation, GitHub Project setup, issue metadata hydration, triage operations, label governance, workflow governance, and organization-level process docs.
+- `MVP Execution`: Core MVP implementation work across `control-plane-api`, `ai-execution-service`, and `arbiter-console`, including execution behavior, routing, receipts, cost-control primitives, demo fixtures, and console MVP features.
+- `Security & Compliance`: Security posture, privacy posture, secret hygiene, dependency vulnerability handling, provenance, error/log leakage prevention, hosted-demo security gates, and customer-pilot security readiness.
+- `Documentation & Site`: Public docs, buyer-facing site, documentation support work, content guardrails, integration docs, limitations pages, and site validation.
+- `Infrastructure & Ops`: Deployment, runtime operations, environment configuration, cloud/hosting setup, CI/CD infrastructure, Docker/runtime validation, and operational readiness.
 
 `Workstream` is human-assigned. Agents should read `Workstream` for scope context only and should not autonomously change it.
+
+Historical or proposed lowercase values such as `execution`, `observability`, `resilience`, `policy-governance`, `security-privacy`, `cost-control`, `demo-readiness`, `console`, `site-docs`, `repo-operations`, and `architecture` are not valid Workstream values unless the live GitHub Project field options are migrated to those values.
 
 ## Label vs. Project Field Conflict Resolution
 
