@@ -6,7 +6,6 @@ const {
   mapLabelsToFieldHints,
   parseProjectRef,
   parseDryRun,
-  parseBooleanToken,
   isEmptyCurrent,
   sameValue,
   planHydration,
