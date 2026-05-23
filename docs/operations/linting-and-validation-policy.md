@@ -66,7 +66,6 @@ Advisory findings may still justify follow-up issues when they identify real def
 Applies to:
 
 - `control-plane-api`
-- `ai-execution-service`
 
 Minimum blocking validation baseline:
 
@@ -89,6 +88,36 @@ Notes:
 - Service validation must not require real provider credentials.
 - Tests should use fixtures, stubs, mocks, or no-op provider configuration.
 - Formatting rules should be kept in `.editorconfig` where possible.
+
+### Python Service Repositories
+
+Applies to:
+
+- `ai-execution-service`
+
+Minimum blocking validation baseline:
+
+| Check | Command | Blocking |
+|---|---|---:|
+| Install | `pip install -r requirements.txt` or project equivalent | Yes |
+| Lint | `ruff check .` or project equivalent | Yes, once configured |
+| Formatting | `ruff format --check .` or `black --check .` | Yes, once configured and stable |
+| Typecheck | `mypy .` or project equivalent | Yes, once configured |
+| Tests | `pytest` | Yes |
+
+Recommended advisory checks:
+
+| Check | Tooling | Advisory until separately approved |
+|---|---|---:|
+| Coverage threshold | Coverage tooling | Yes |
+| Dependency vulnerability scan | `pip-audit`, Dependabot, or equivalent | Yes |
+| Broader static analysis | Bandit or equivalent | Yes |
+
+Notes:
+
+- Service validation must not require real provider credentials.
+- Tests should use fixtures, stubs, mocks, or no-op provider configuration.
+- Python tool choices should be documented in the repo before becoming blocking.
 
 ### Organization Metadata and Docs Automation
 
@@ -198,7 +227,7 @@ Implementation should remain repo-scoped:
 
 - `.github#140` — add docs, workflow, and taxonomy validation checks.
 - `arbiter-systems/control-plane-api#377` — enforce .NET formatting and baseline validation.
-- `arbiter-systems/ai-execution-service#50` — enforce .NET formatting and baseline validation.
+- `arbiter-systems/ai-execution-service#50` — enforce Python formatting, linting, test, and baseline validation.
 - `arbiter-systems/arbiter-console#30` — add TypeScript, lint, format, and build validation baseline.
 - `arbiter-systems/arbiter-site#21` — add site docs lint, format, and build validation baseline.
 
