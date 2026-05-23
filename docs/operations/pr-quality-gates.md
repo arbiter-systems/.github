@@ -55,12 +55,12 @@ TODO: confirm with `ai-execution-service/AGENTS.md`.
 
 | Check | Command | Required before PR | Notes |
 |---|---|---:|---|
-| Install | N/A today | N/A | Documentation-only baseline today. `.github#140` may add npm-based validation later. |
-| Lint | Manual markdown review today | Yes | After `.github#140`, use the documented markdown lint command. |
-| Typecheck | N/A | N/A | No typecheck command is documented for this repository. |
-| Test | Manual taxonomy/project metadata review today | Yes | After `.github#140`, use the documented taxonomy/project metadata test command. |
-| Build | N/A | N/A | No build command is documented for this repository. |
-| Workflow syntax | Manual review today | Yes when workflow files change | After `.github#140`, use `actionlint` or the documented equivalent. |
+| Install | `TODO: confirm with ai-execution-service/AGENTS.md` | Yes | Confirm the repo's dependency install command before use. |
+| Lint | `TODO: confirm with ai-execution-service/AGENTS.md` | Yes | Confirm the repo's lint command before use. |
+| Format | `TODO: confirm with ai-execution-service/AGENTS.md` | Yes | Confirm the repo's format-check command before use. |
+| Typecheck | `TODO: confirm with ai-execution-service/AGENTS.md` | Yes | Confirm the repo's typecheck command before use. |
+| Test | `TODO: confirm with ai-execution-service/AGENTS.md` | Yes | Required before PR for execution service changes when documented locally. |
+| Build | `TODO: confirm with ai-execution-service/AGENTS.md` | Yes | Confirm whether the repo has a build or package validation command before use. |
 
 #### Recommended CI Check Names
 
@@ -175,6 +175,8 @@ CI failures must be reproducible locally where practical. Logs must not contain 
 - `arbiter-console`: add or update CI workflow in a separate `arbiter-console` issue.
 - `arbiter-site`: add or update CI workflow in a separate `arbiter-site` issue.
 - `.github`: implement docs, workflow, and taxonomy validation in `.github#140` after the linting and validation policy in `.github#139` is merged.
+
+## Related Documents
 
 - [Linting and validation policy](linting-and-validation-policy.md)
 
