@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 
@@ -8,6 +7,11 @@ const GITHUB_API_URL = "https://api.github.com";
 const GITHUB_GRAPHQL_URL = "https://api.github.com/graphql";
 const USER_AGENT = "arbiter-project-field-hydration";
 const DEFAULT_PROJECT_REF = "arbiter-systems/2";
+
+const PROJECT_REF_RE = /^([a-z0-9_.-]+)\/(\d+)$/i;
+const METADATA_BLOCK_RE = /<!--\s*arbiter-project\b([\s\S]*?)-->/i;
+const METADATA_LINE_RE = /^([a-z_]+)\s*:\s*(.*)$/i;
+const REPO_FULL_NAME_RE = /^([^/]+)\/([^/]+)$/;
 
 const SUPPORTED_METADATA_KEYS = new Set([
   "project",
@@ -129,23 +133,18 @@ const FIELD_CONFIG = {
       mixed: "mixed",
     },
   },
-workstream: {
-  type: "single-select",
-  required: false,
-  candidates: ["Workstream"],
-  values: {
-    "github-project-management": "GitHub Project Management",
-    "github project management": "GitHub Project Management",
-    "mvp-execution": "MVP Execution",
-    "mvp execution": "MVP Execution",
-    "security-privacy": "Security & Compliance",
-    "security & compliance": "Security & Compliance",
-    "documentation-site": "Documentation & Site",
-    "documentation & site": "Documentation & Site",
-    "infrastructure-ops": "Infrastructure & Ops",
-    "infrastructure & ops": "Infrastructure & Ops",
+  workstream: {
+    type: "single-select",
+    required: false,
+    candidates: ["Workstream"],
+    values: buildSingleSelectValueMap([
+      ["GitHub Project Management", ["github-project-management"]],
+      ["MVP Execution", ["mvp-execution"]],
+      ["Security & Compliance", ["security-privacy"]],
+      ["Documentation & Site", ["documentation-site"]],
+      ["Infrastructure & Ops", ["infrastructure-ops"]],
+    ]),
   },
-},
   validation_command: { type: "text", required: false, candidates: ["Validation Command"] },
   blocked_by: { type: "text", candidates: ["Blocked By"] },
   implementation_order: { type: "number", required: false, candidates: ["Implementation Order"] },
@@ -153,6 +152,17 @@ workstream: {
 
 function normalizeName(value) {
   return String(value || "").trim().toLowerCase();
+}
+
+function buildSingleSelectValueMap(entries) {
+  const values = {};
+  for (const [displayValue, aliases = []] of entries) {
+    values[normalizeName(displayValue)] = displayValue;
+    for (const alias of aliases) {
+      values[normalizeName(alias)] = displayValue;
+    }
+  }
+  return values;
 }
 
 function parseBooleanToken(value) {
@@ -240,7 +250,7 @@ function parseArgs(argv) {
 
 function parseProjectRef(value) {
   const input = String(value || "").trim();
-  const match = new RegExp(/^([a-z0-9_.-]+)\/(\d+)$/i).exec(input);
+  const match = PROJECT_REF_RE.exec(input);
   if (!match) {
     throw new Error("[error] Project reference must be in org/number format (example: arbiter-systems/2)");
   }
@@ -250,13 +260,9 @@ function parseProjectRef(value) {
   };
 }
 
-function canonicalMetadataKey(key) {
-  return normalizeName(key);
-}
-
 function parseMetadataBlock(body) {
   const text = String(body || "");
-  const blockMatch = new RegExp(/<!--\s*arbiter-project\b([\s\S]*?)-->/i).exec(text);
+  const blockMatch = METADATA_BLOCK_RE.exec(text);
   if (!blockMatch) {
     return {
       found: false,
@@ -278,12 +284,12 @@ function parseMetadataBlock(body) {
     if (!line) {
       continue;
     }
-    const pairMatch = new RegExp(/^([a-z_]+)\s*:\s*(.*)$/i).exec(line);
+    const pairMatch = METADATA_LINE_RE.exec(line);
     if (!pairMatch) {
       warnings.push(`ignored malformed metadata line: "${line}"`);
       continue;
     }
-    const key = canonicalMetadataKey(pairMatch[1]);
+    const key = normalizeName(pairMatch[1]);
     const value = String(pairMatch[2] || "").trim();
     if (!SUPPORTED_METADATA_KEYS.has(key)) {
       unknownKeys.push(key);
@@ -453,7 +459,7 @@ async function getInstallationToken(appId, privateKey, org) {
 }
 
 async function fetchIssueByNumber(token, repoFullName, issueNumber) {
-  const match = new RegExp(/^([^/]+)\/([^/]+)$/).exec(String(repoFullName || "").trim());
+  const match = REPO_FULL_NAME_RE.exec(String(repoFullName || "").trim());
   if (!match) {
     throw new Error("[error] --repo must be in owner/repo format");
   }
@@ -598,7 +604,7 @@ function getSingleSelectOptionId(field, desiredValue) {
 }
 
 function formatOptionList(values) {
-  const formatted = values.filter((value) => String(value || "").trim() !== "").join(", ");
+  const formatted = [...new Set(values)].filter((value) => String(value || "").trim() !== "").join(", ");
   return formatted || "(none)";
 }
 
@@ -655,53 +661,26 @@ function formatUnchangedNote(fieldName, current) {
   return `${fieldName}: unchanged (current='${current?.value ?? ""}')`;
 }
 
-function addStatusCandidate(candidates, notes, metadata, labelHints, currentByField, fields) {
-  const statusCurrent = getCurrentFieldValue("status", currentByField, fields);
-  const fieldName = getConfiguredFieldName("status", fields);
-  if (metadata.explicitKeys.has("status")) {
-    candidates.push({ key: "status", value: metadata.values.status, source: "metadata" });
+function addFieldCandidate(key, candidates, notes, metadata, currentByField, fields, { labelHintValue = null, defaultValue = null, noteIfOccupied = false } = {}) {
+  const current = getCurrentFieldValue(key, currentByField, fields);
+  if (metadata.explicitKeys.has(key)) {
+    candidates.push({ key, value: metadata.values[key], source: "metadata" });
     return;
   }
-  if (labelHints.status && isEmptyCurrent(statusCurrent)) {
-    candidates.push({ key: "status", value: labelHints.status, source: "label" });
+  if (labelHintValue && isEmptyCurrent(current)) {
+    candidates.push({ key, value: labelHintValue, source: "label" });
     return;
   }
-  if (isEmptyCurrent(statusCurrent)) {
-    candidates.push({ key: "status", value: "Inbox", source: "default" });
+  if (labelHintValue && !isEmptyCurrent(current)) {
+    notes.push(formatUnchangedNote(getConfiguredFieldName(key, fields), current));
     return;
   }
-  notes.push(formatUnchangedNote(fieldName, statusCurrent));
-}
-
-function addLaneCandidate(candidates, notes, metadata, labelHints, currentByField, fields) {
-  const laneCurrent = getCurrentFieldValue("lane", currentByField, fields);
-  const fieldName = getConfiguredFieldName("lane", fields);
-  if (metadata.explicitKeys.has("lane")) {
-    candidates.push({ key: "lane", value: metadata.values.lane, source: "metadata" });
+  if (defaultValue !== null && isEmptyCurrent(current)) {
+    candidates.push({ key, value: defaultValue, source: "default" });
     return;
   }
-  if (labelHints.lane && isEmptyCurrent(laneCurrent)) {
-    candidates.push({ key: "lane", value: labelHints.lane, source: "label" });
-    return;
-  }
-  if (labelHints.lane && !isEmptyCurrent(laneCurrent)) {
-    notes.push(formatUnchangedNote(fieldName, laneCurrent));
-  }
-}
-
-function addProjectPriorityCandidate(candidates, notes, metadata, labelHints, currentByField, fields) {
-  const priorityCurrent = getCurrentFieldValue("project_priority", currentByField, fields);
-  const fieldName = getConfiguredFieldName("project_priority", fields);
-  if (metadata.explicitKeys.has("project_priority")) {
-    candidates.push({ key: "project_priority", value: metadata.values.project_priority, source: "metadata" });
-    return;
-  }
-  if (labelHints.priority && isEmptyCurrent(priorityCurrent)) {
-    candidates.push({ key: "project_priority", value: labelHints.priority, source: "label" });
-    return;
-  }
-  if (labelHints.priority && !isEmptyCurrent(priorityCurrent)) {
-    notes.push(formatUnchangedNote(fieldName, priorityCurrent));
+  if (noteIfOccupied && !isEmptyCurrent(current)) {
+    notes.push(formatUnchangedNote(getConfiguredFieldName(key, fields), current));
   }
 }
 
@@ -725,9 +704,9 @@ function addExplicitMetadataCandidates(candidates, metadata) {
 function buildHydrationCandidates(metadata, labelHints, currentByField, fields) {
   const notes = [];
   const candidates = [];
-  addStatusCandidate(candidates, notes, metadata, labelHints, currentByField, fields);
-  addLaneCandidate(candidates, notes, metadata, labelHints, currentByField, fields);
-  addProjectPriorityCandidate(candidates, notes, metadata, labelHints, currentByField, fields);
+  addFieldCandidate("status", candidates, notes, metadata, currentByField, fields, { labelHintValue: labelHints.status, defaultValue: "Inbox", noteIfOccupied: true });
+  addFieldCandidate("lane", candidates, notes, metadata, currentByField, fields, { labelHintValue: labelHints.lane });
+  addFieldCandidate("project_priority", candidates, notes, metadata, currentByField, fields, { labelHintValue: labelHints.priority });
   addExplicitMetadataCandidates(candidates, metadata);
   return { candidates, notes };
 }
@@ -888,28 +867,70 @@ function emitInputWarnings(metadata, labelHints) {
   }
 }
 
-// GitHub GraphQL is the authoritative source for field IDs and single-select option IDs.
-// This script is the orchestration layer; it never hardcodes GraphQL node IDs.
-async function fetchProjectMetadata(token, targetProject) {
-  const projectMetaQuery = `
-    query ProjectMeta($org: String!, $number: Int!) {
-      organization(login: $org) {
-        projectV2(number: $number) {
-          id
-          title
-          fields(first: 100) {
-            nodes {
-              __typename
-              ... on ProjectV2Field {
+const PROJECT_META_QUERY = `
+  query ProjectMeta($org: String!, $number: Int!) {
+    organization(login: $org) {
+      projectV2(number: $number) {
+        id
+        title
+        fields(first: 100) {
+          nodes {
+            __typename
+            ... on ProjectV2Field {
+              id
+              name
+            }
+            ... on ProjectV2SingleSelectField {
+              id
+              name
+              options {
                 id
                 name
               }
-              ... on ProjectV2SingleSelectField {
-                id
-                name
-                options {
-                  id
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const ISSUE_ITEMS_QUERY = `
+  query IssueProjectItems($issueId: ID!) {
+    node(id: $issueId) {
+      ... on Issue {
+        projectItems(first: 100) {
+          nodes {
+            id
+            project {
+              id
+            }
+            fieldValues(first: 100) {
+              nodes {
+                __typename
+                ... on ProjectV2ItemFieldSingleSelectValue {
                   name
+                  field {
+                    ... on ProjectV2FieldCommon {
+                      name
+                    }
+                  }
+                }
+                ... on ProjectV2ItemFieldTextValue {
+                  text
+                  field {
+                    ... on ProjectV2FieldCommon {
+                      name
+                    }
+                  }
+                }
+                ... on ProjectV2ItemFieldNumberValue {
+                  number
+                  field {
+                    ... on ProjectV2FieldCommon {
+                      name
+                    }
+                  }
                 }
               }
             }
@@ -917,9 +938,23 @@ async function fetchProjectMetadata(token, targetProject) {
         }
       }
     }
-  `;
+  }
+`;
 
-  const projectData = await githubGraphql(token, projectMetaQuery, {
+const ADD_ITEM_MUTATION = `
+  mutation AddProjectItem($projectId: ID!, $contentId: ID!) {
+    addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
+      item {
+        id
+      }
+    }
+  }
+`;
+
+// GitHub GraphQL is the authoritative source for field IDs and single-select option IDs.
+// This script is the orchestration layer; it never hardcodes GraphQL node IDs.
+async function fetchProjectMetadata(token, targetProject) {
+  const projectData = await githubGraphql(token, PROJECT_META_QUERY, {
     org: targetProject.org,
     number: targetProject.number,
   });
@@ -949,52 +984,7 @@ async function loadTargetProjectContext({ auth, context, metadata }) {
 }
 
 async function fetchIssueProjectItems(token, issueNodeId) {
-  const issueItemQuery = `
-    query IssueProjectItems($issueId: ID!) {
-      node(id: $issueId) {
-        ... on Issue {
-          projectItems(first: 100) {
-            nodes {
-              id
-              project {
-                id
-              }
-              fieldValues(first: 100) {
-                nodes {
-                  __typename
-                  ... on ProjectV2ItemFieldSingleSelectValue {
-                    name
-                    field {
-                      ... on ProjectV2FieldCommon {
-                        name
-                      }
-                    }
-                  }
-                  ... on ProjectV2ItemFieldTextValue {
-                    text
-                    field {
-                      ... on ProjectV2FieldCommon {
-                        name
-                      }
-                    }
-                  }
-                  ... on ProjectV2ItemFieldNumberValue {
-                    number
-                    field {
-                      ... on ProjectV2FieldCommon {
-                        name
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  `;
-  return githubGraphql(token, issueItemQuery, { issueId: issueNodeId });
+  return githubGraphql(token, ISSUE_ITEMS_QUERY, { issueId: issueNodeId });
 }
 
 async function addProjectItemIfNeeded({ token, event, project, requestedProjectRef, dryRun }) {
@@ -1006,16 +996,7 @@ async function addProjectItemIfNeeded({ token, event, project, requestedProjectR
     };
   }
 
-  const addItemMutation = `
-    mutation AddProjectItem($projectId: ID!, $contentId: ID!) {
-      addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
-        item {
-          id
-        }
-      }
-    }
-  `;
-  const added = await githubGraphql(token, addItemMutation, {
+  const added = await githubGraphql(token, ADD_ITEM_MUTATION, {
     projectId: project.id,
     contentId: event.issueNodeId,
   });
@@ -1095,58 +1076,56 @@ function markFailedIfPlanHasErrors(plan) {
   }
 }
 
-function buildFieldUpdateMutations() {
-  return {
-    text: `
-    mutation SetTextField($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) {
-      updateProjectV2ItemFieldValue(
-        input: {
-          projectId: $projectId
-          itemId: $itemId
-          fieldId: $fieldId
-          value: { text: $value }
-        }
-      ) {
-        projectV2Item {
-          id
-        }
+const FIELD_UPDATE_MUTATIONS = {
+  text: `
+  mutation SetTextField($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) {
+    updateProjectV2ItemFieldValue(
+      input: {
+        projectId: $projectId
+        itemId: $itemId
+        fieldId: $fieldId
+        value: { text: $value }
+      }
+    ) {
+      projectV2Item {
+        id
       }
     }
-  `,
-    number: `
-    mutation SetNumberField($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: Float!) {
-      updateProjectV2ItemFieldValue(
-        input: {
-          projectId: $projectId
-          itemId: $itemId
-          fieldId: $fieldId
-          value: { number: $value }
-        }
-      ) {
-        projectV2Item {
-          id
-        }
+  }
+`,
+  number: `
+  mutation SetNumberField($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: Float!) {
+    updateProjectV2ItemFieldValue(
+      input: {
+        projectId: $projectId
+        itemId: $itemId
+        fieldId: $fieldId
+        value: { number: $value }
+      }
+    ) {
+      projectV2Item {
+        id
       }
     }
-  `,
-    singleSelect: `
-    mutation SetSingleSelectField($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
-      updateProjectV2ItemFieldValue(
-        input: {
-          projectId: $projectId
-          itemId: $itemId
-          fieldId: $fieldId
-          value: { singleSelectOptionId: $optionId }
-        }
-      ) {
-        projectV2Item {
-          id
-        }
+  }
+`,
+  singleSelect: `
+  mutation SetSingleSelectField($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+    updateProjectV2ItemFieldValue(
+      input: {
+        projectId: $projectId
+        itemId: $itemId
+        fieldId: $fieldId
+        value: { singleSelectOptionId: $optionId }
+      }
+    ) {
+      projectV2Item {
+        id
       }
     }
-  `,
-  };
-}
+  }
+`,
+};
 
 async function applyHydrationOperation({ token, project, itemId, event, dryRun, op, mutations }) {
   const issueKey = `${event.repoFullName}#${event.issueNumber}`;
@@ -1192,8 +1171,6 @@ async function applyHydrationOperation({ token, project, itemId, event, dryRun, 
 }
 
 async function applyHydrationOperations({ token, project, itemId, event, dryRun, operations }) {
-  const mutations = buildFieldUpdateMutations();
-
   for (const op of operations) {
     await applyHydrationOperation({
       token,
@@ -1202,7 +1179,7 @@ async function applyHydrationOperations({ token, project, itemId, event, dryRun,
       event,
       dryRun,
       op,
-      mutations,
+      mutations: FIELD_UPDATE_MUTATIONS,
     });
   }
 }
@@ -1285,360 +1262,11 @@ async function run() {
 }
 
 function runSelfTests() {
-  let metadata = parseMetadataBlock("No metadata");
-  assert.equal(metadata.found, false);
-
-  metadata = parseMetadataBlock(
-    [
-      "<!-- arbiter-project",
-      "project: arbiter-systems/2",
-      "repo: arbiter-systems/.github",
-      "status: Inbox",
-      "lane: active-mvp",
-      "project_priority: Low",
-      "phase: mvp",
-      "release_gate: local-mvp",
-      "implementation_readiness: ready",
-      "scope_risk: medium",
-      "confidence: high",
-      "agent: codex",
-      "workstream: execution",
-      "validation_command: npm test",
-      "blocked_by:",
-      "implementation_order: 7",
-      "-->",
-    ].join("\n"),
+  require("node:child_process").execFileSync(
+    process.execPath,
+    [require.resolve("./hydrate-project-fields.test.cjs")],
+    { stdio: "inherit" },
   );
-  assert.equal(metadata.found, true);
-  assert.equal(metadata.values.project, "arbiter-systems/2");
-  assert.equal(metadata.values.repo, "arbiter-systems/.github");
-  assert.equal(metadata.unknownKeys.length, 0);
-  assert.equal(metadata.values.status, "Inbox");
-  assert.equal(metadata.values.lane, "active-mvp");
-  assert.equal(metadata.values.project_priority, "Low");
-  assert.equal(metadata.values.phase, "mvp");
-  assert.equal(metadata.values.release_gate, "local-mvp");
-  assert.equal(metadata.values.implementation_readiness, "ready");
-  assert.equal(metadata.values.scope_risk, "medium");
-  assert.equal(metadata.values.confidence, "high");
-  assert.equal(metadata.values.agent, "codex");
-  assert.equal(metadata.values.workstream, "execution");
-  assert.equal(metadata.values.validation_command, "npm test");
-  assert.equal(metadata.values.blocked_by, "");
-  assert.equal(metadata.values.implementation_order, "7");
-  assert.equal(metadata.explicitKeys.has("blocked_by"), false);
-  assert.equal(metadata.explicitKeys.has("project_priority"), true);
-
-  metadata = parseMetadataBlock("<!-- arbiter-project\nstatus Inbox\nlane: active-mvp\n-->");
-  assert.equal(metadata.found, true);
-  assert.equal(metadata.warnings.length, 1);
-
-  metadata = parseMetadataBlock("<!-- arbiter-project\npriority: High\n-->");
-  assert.equal(metadata.unknownKeys.includes("priority"), true);
-  assert.equal(metadata.values.project_priority, undefined);
-
-  metadata = parseMetadataBlock("<!-- arbiter-project\nunknown_field: value\n-->");
-  assert.equal(metadata.unknownKeys.includes("unknown_field"), true);
-  metadata = parseMetadataBlock("<!-- arbiter-project\narea: ci\n-->");
-  assert.equal(metadata.unknownKeys.includes("area"), true);
-
-  metadata = parseMetadataBlock("<!-- arbiter-project\nphase:\n-->");
-  assert.equal(metadata.explicitKeys.has("phase"), false);
-
-  let labels = mapLabelsToFieldHints(["active-mvp"]);
-  assert.equal(labels.lane, "active-mvp");
-  assert.equal(labels.priority, null);
-  assert.equal(labels.status, null);
-
-  labels = mapLabelsToFieldHints(["lane: deferred"]);
-  assert.equal(labels.lane, "deferred");
-
-  labels = mapLabelsToFieldHints(["blocked"]);
-  assert.equal(labels.status, "Blocked");
-
-  labels = mapLabelsToFieldHints(["ready"]);
-  assert.equal(labels.status, null);
-  labels = mapLabelsToFieldHints(["status: ready"]);
-  assert.equal(labels.status, null);
-
-  labels = mapLabelsToFieldHints(["triage"]);
-  assert.equal(labels.status, "Triage");
-
-  labels = mapLabelsToFieldHints(["priority: high"]);
-  assert.equal(labels.priority, "High");
-
-  labels = mapLabelsToFieldHints(["priority: medium"]);
-  assert.equal(labels.priority, "Medium");
-
-  labels = mapLabelsToFieldHints(["priority: low"]);
-  assert.equal(labels.priority, "Low");
-
-  labels = mapLabelsToFieldHints([]);
-  assert.equal(labels.lane, null);
-  assert.equal(labels.priority, null);
-  assert.equal(labels.status, null);
-
-  labels = mapLabelsToFieldHints(["active-mvp", "lane: deferred"]);
-  assert.equal(labels.lane, null);
-  assert.equal(labels.warnings.length > 0, true);
-
-  assert.deepEqual(parseProjectRef("arbiter-systems/2"), { org: "arbiter-systems", number: 2 });
-  assert.throws(() => parseProjectRef("arbiter-systems/project-two"), /org\/number format/);
-
-  assert.equal(parseDryRun("true"), true);
-  assert.equal(parseDryRun("false"), false);
-  assert.equal(parseDryRun(undefined), false);
-  assert.equal(parseDryRun(""), false);
-  assert.equal(parseDryRun("1"), true);
-  assert.equal(parseDryRun("0"), false);
-
-  let warned = "";
-  const originalWarn = console.warn;
-  console.warn = (message) => {
-    warned = String(message);
-  };
-  try {
-    assert.equal(parseDryRun("not-a-bool"), false);
-  } finally {
-    console.warn = originalWarn;
-  }
-  assert.equal(warned.includes("[warn] Unrecognized DRY_RUN value 'not-a-bool', defaulting to false"), true);
-
-  assert.equal(isEmptyCurrent(null), true);
-  assert.equal(isEmptyCurrent({ type: "text", value: "" }), true);
-  assert.equal(isEmptyCurrent({ type: "single-select", value: "Inbox" }), false);
-  assert.equal(isEmptyCurrent({ type: "number", value: null }), true);
-  assert.equal(isEmptyCurrent({ type: "number", value: 3 }), false);
-
-  assert.equal(sameValue("single-select", { type: "single-select", value: "Inbox" }, "inbox"), true);
-  assert.equal(sameValue("text", { type: "text", value: "abc" }, "abc"), true);
-  assert.equal(sameValue("number", { type: "number", value: 7 }, 7), true);
-  assert.equal(sameValue("number", { type: "number", value: 7 }, 8), false);
-
-  const fields = [
-    {
-      id: "f-status",
-      name: "Status",
-      options: [
-        { id: "o-inbox", name: "Inbox" },
-        { id: "o-triage", name: "Triage" },
-      ],
-    },
-    {
-      id: "f-lane",
-      name: "Lane",
-      options: [
-        { id: "o-active", name: "active-mvp" },
-        { id: "o-deferred", name: "deferred" },
-      ],
-    },
-    {
-      id: "f-priority",
-      name: "Project Priority",
-      options: [
-        { id: "o-high", name: "High" },
-        { id: "o-medium", name: "Medium" },
-      ],
-    },
-    {
-      id: "f-phase",
-      name: "Phase",
-      options: [
-        { id: "o-mvp", name: "mvp" },
-      ],
-    },
-    {
-      id: "f-validation",
-      name: "Validation Command",
-    },
-    {
-      id: "f-workstream",
-      name: "Workstream",
-      options: [
-        { id: "o-exec", name: "execution" },
-      ],
-    },
-  ];
-
-  const metadataMissing = {
-    found: false,
-    values: {},
-    explicitKeys: new Set(),
-    warnings: [],
-    unknownKeys: [],
-  };
-
-  let plan = planHydration(
-    metadataMissing,
-    { lane: "active-mvp", priority: "High", status: "Ready", warnings: [] },
-    new Map([
-      ["status", { type: "single-select", value: "Triage" }],
-      ["lane", { type: "single-select", value: "deferred" }],
-      ["project priority", { type: "single-select", value: "Medium" }],
-    ]),
-    fields,
-  );
-  assert.equal(plan.operations.some((op) => op.key === "lane"), false);
-  assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
-  assert.equal(plan.operations.some((op) => op.key === "status"), false);
-  assert.equal(plan.errors.length, 0);
-
-  plan = planHydration(metadataMissing, { lane: null, priority: null, status: null, warnings: [] }, new Map(), fields);
-  assert.equal(plan.operations.some((op) => op.key === "status" && op.value === "Inbox" && op.source === "default"), true);
-  assert.equal(plan.errors.length, 0);
-
-  plan = planHydration(
-    {
-      found: true,
-      values: { lane: "active-mvp", project_priority: "High", workstream: "execution" },
-      explicitKeys: new Set(["lane", "project_priority", "workstream"]),
-      warnings: [],
-      unknownKeys: [],
-    },
-    { lane: null, priority: null, status: null, warnings: [] },
-    new Map([
-      ["lane", { type: "single-select", value: "deferred" }],
-      ["project priority", { type: "single-select", value: "Medium" }],
-    ]),
-    fields,
-  );
-  assert.equal(plan.operations.some((op) => op.key === "lane" && op.source === "metadata"), true);
-  assert.equal(plan.operations.some((op) => op.key === "project_priority" && op.source === "metadata"), true);
-  assert.equal(plan.operations.some((op) => op.key === "workstream" && op.source === "metadata"), true);
-  assert.equal(plan.errors.length, 0);
-
-  plan = planHydration(
-    {
-      found: true,
-      values: { phase: "mvp", validation_command: "npm test" },
-      explicitKeys: new Set(["phase", "validation_command"]),
-      warnings: [],
-      unknownKeys: [],
-    },
-    { lane: null, priority: null, status: null, warnings: [] },
-    new Map(),
-    fields.filter((field) => field.name !== "Phase"),
-  );
-  assert.equal(plan.operations.some((op) => op.key === "phase"), false);
-  assert.equal(
-    plan.warnings.some((warning) => warning.includes("Optional project field for 'phase' was not found")),
-    true,
-  );
-
-  assert.throws(
-    () => validateRequiredProjectFields(fields.filter((field) => field.name !== "Lane")),
-    /Missing required project fields/,
-  );
-
-  plan = planHydration(
-    {
-      found: true,
-      values: { project_priority: "Critical" },
-      explicitKeys: new Set(["project_priority"]),
-      warnings: [],
-      unknownKeys: [],
-    },
-    { lane: null, priority: null, status: null, warnings: [] },
-    new Map(),
-    fields,
-  );
-  assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
-  assert.equal(
-    plan.errors.some((error) =>
-      error.includes("Unknown single-select option 'Critical' for field 'Project Priority'."),
-    ),
-    true,
-  );
-  assert.equal(plan.errors.some((error) => error.includes("Configured taxonomy")), true);
-  assert.equal(plan.errors.some((error) => error.includes("Live project options")), true);
-
-  plan = planHydration(
-    {
-      found: true,
-      values: { project_priority: "P1" },
-      explicitKeys: new Set(["project_priority"]),
-      warnings: [],
-      unknownKeys: [],
-    },
-    { lane: null, priority: null, status: null, warnings: [] },
-    new Map(),
-    fields,
-  );
-  assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
-  assert.equal(
-    plan.errors.some((error) =>
-      error.includes("Unknown single-select option 'P1' for field 'Project Priority'."),
-    ),
-    true,
-  );
-  assert.equal(plan.errors.some((error) => error.includes("Configured taxonomy")), true);
-  assert.equal(plan.errors.some((error) => error.includes("Live project options")), true);
-
-  plan = planHydration(
-    {
-      found: true,
-      values: { workstream: "execution" },
-      explicitKeys: new Set(["workstream"]),
-      warnings: [],
-      unknownKeys: [],
-    },
-    { lane: null, priority: null, status: null, warnings: [] },
-    new Map(),
-    fields.filter((field) => field.name !== "Workstream"),
-  );
-  assert.equal(plan.operations.some((op) => op.key === "workstream"), false);
-  assert.equal(
-    plan.warnings.some((warning) => warning.includes("Optional project field for 'workstream'")),
-    true,
-  );
-
-  const missingOptionFields = fields.map((field) =>
-    field.name === "Project Priority"
-      ? { ...field, options: [{ id: "o-medium", name: "Medium" }] }
-      : field,
-  );
-  plan = planHydration(
-    {
-      found: true,
-      values: { project_priority: "High" },
-      explicitKeys: new Set(["project_priority"]),
-      warnings: [],
-      unknownKeys: [],
-    },
-    { lane: null, priority: null, status: null, warnings: [] },
-    new Map(),
-    missingOptionFields,
-  );
-  assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
-  assert.equal(
-    plan.errors.some((error) =>
-      error.includes("Single-select option 'High' is not present in the live project field 'Project Priority'."),
-    ),
-    true,
-  );
-  assert.equal(plan.errors.some((error) => error.includes("Live project options: Medium")), true);
-
-  const emptyOptionFields = fields.map((field) =>
-    field.name === "Project Priority"
-      ? { ...field, options: [] }
-      : field,
-  );
-  plan = planHydration(
-    {
-      found: true,
-      values: { project_priority: "High" },
-      explicitKeys: new Set(["project_priority"]),
-      warnings: [],
-      unknownKeys: [],
-    },
-    { lane: null, priority: null, status: null, warnings: [] },
-    new Map(),
-    emptyOptionFields,
-  );
-  assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
-  assert.equal(plan.errors.some((error) => error.includes("Live project options: (none)")), true);
-
-  console.log("[self-test] ok");
 }
 
 async function main() {
@@ -1651,7 +1279,9 @@ async function main() {
   }
 }
 
-main();
+if (require.main === module) {
+  main();
+}
 
 module.exports = {
   mapLabelsToFieldHints,
@@ -1660,4 +1290,8 @@ module.exports = {
   parseDryRun,
   parseBooleanToken,
   parseTruthy,
+  isEmptyCurrent,
+  sameValue,
+  planHydration,
+  validateRequiredProjectFields,
 };
