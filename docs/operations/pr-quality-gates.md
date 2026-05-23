@@ -55,11 +55,12 @@ TODO: confirm with `ai-execution-service/AGENTS.md`.
 
 | Check | Command | Required before PR | Notes |
 |---|---|---:|---|
-| Install | `TODO: confirm with ai-execution-service/AGENTS.md` | Yes | Confirm dependency install command in the service repo before use. |
-| Lint | `TODO: confirm with ai-execution-service/AGENTS.md` | Yes | Confirm lint or formatting command in the service repo before use. |
-| Typecheck | `TODO: confirm with ai-execution-service/AGENTS.md` | Yes | Confirm type validation command in the service repo before use. |
+| Install | `TODO: confirm with ai-execution-service/AGENTS.md` | Yes | Confirm the repo's dependency install command before use. |
+| Lint | `TODO: confirm with ai-execution-service/AGENTS.md` | Yes | Confirm the repo's lint command before use. |
+| Format | `TODO: confirm with ai-execution-service/AGENTS.md` | Yes | Confirm the repo's format-check command before use. |
+| Typecheck | `TODO: confirm with ai-execution-service/AGENTS.md` | Yes | Confirm the repo's typecheck command before use. |
 | Test | `TODO: confirm with ai-execution-service/AGENTS.md` | Yes | Required before PR for execution service changes when documented locally. |
-| Build | `TODO: confirm with ai-execution-service/AGENTS.md` | Yes | Required before PR for execution service changes when documented locally. |
+| Build | `TODO: confirm with ai-execution-service/AGENTS.md` | Yes | Confirm whether the repo has a build or package validation command before use. |
 
 #### Recommended CI Check Names
 
@@ -173,4 +174,9 @@ CI failures must be reproducible locally where practical. Logs must not contain 
 - `ai-execution-service`: add or update CI workflow in a separate `ai-execution-service` issue.
 - `arbiter-console`: add or update CI workflow in a separate `arbiter-console` issue.
 - `arbiter-site`: add or update CI workflow in a separate `arbiter-site` issue.
-- `.github`: add documentation validation only if needed in a separate `.github` issue.
+- `.github`: implement docs, workflow, and taxonomy validation in `.github#140` after the linting and validation policy in `.github#139` is merged.
+
+## Related Documents
+
+- [Linting and validation policy](linting-and-validation-policy.md)
+

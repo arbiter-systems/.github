@@ -85,7 +85,11 @@ Implementation rules:
 
 ## Validation
 
-For documentation-only changes, inspect rendered markdown where practical. If templates or automation files are added later, validate them with the repository-appropriate tooling.
+For documentation-only changes, inspect rendered markdown where practical.
+
+Use [linting-and-validation-policy](docs/operations/linting-and-validation-policy.md) for the organization baseline on blocking versus advisory checks.
+
+Until dedicated `.github` validation tooling is implemented, use manual markdown review and controlled-file review disclosure for this repository. If templates or automation files are added later, validate them with the repository-appropriate tooling.
 
 ## Git and Completion
 
