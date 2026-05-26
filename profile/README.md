@@ -1,18 +1,28 @@
 # Arbiter Systems
 
-AI Execution Firewall for controlling cost, reliability, routing, and governance in production AI systems.
+Arbiter Systems builds infrastructure for controlling, routing, observing, and governing AI execution across applications, agents, workflows, and model providers.
 
-Arbiter Systems helps engineering teams control AI execution across providers, policies, and operational boundaries. The platform routes AI requests, applies policy and budget-aware controls, tracks provider readiness, reduces waste from failed calls and retries, and produces structured execution receipts without storing raw prompts by default.
+## Focus
 
-## Repositories
+Our current focus is an AI Execution Firewall for engineering teams that need better control over AI-powered execution.
 
-- `control-plane-api` — Control Plane API for policy, routing, resilience, execution receipts, provider readiness, and operational coordination.
-- `ai-execution-service` — Runtime service for model execution, provider integration, streaming responses, and execution handoff.
+Core areas:
 
-## Project status
+- Execution routing
+- Provider health and fallback control
+- Retry suppression
+- Budget guardrails
+- Execution receipts
+- Policy decision explanations
+- Prompt privacy by default
+- AI execution waste visibility
 
-Active early development. Current MVP focus: AI Execution Firewall, cost control, provider readiness, retry/waste reduction, budget-aware routing, execution receipts, prompt privacy, and low-overhead pass-through execution.
+## Current Status
+
+Arbiter Systems is in early product development. The current work focuses on a minimal, sellable MVP and public-safe infrastructure documentation.
 
 ## Contact
+
+For business, startup program, or infrastructure credit inquiries:
 
 patrick@arbitersystems.io
