@@ -15,4 +15,4 @@ Active early development. Current MVP focus: AI Execution Firewall, cost control
 
 ## Contact
 
-founder@arbitersystems.io
+patrick@arbitersystems.io
