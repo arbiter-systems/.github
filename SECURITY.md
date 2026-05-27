@@ -1,16 +1,12 @@
 # Security Policy
 
-## Purpose
-
-This repository contains Arbiter Systems organization-level GitHub configuration, templates, profile content, and community health files.
-
-It does not contain production application code, customer data, execution traces, prompts, completions, provider credentials, or runtime infrastructure.
-
 ## Supported Versions
 
-Only the active `main` branch is supported.
+Arbiter Systems AI service is currently pre-release software.
 
-Older branches, abandoned branches, forks, and local copies are not supported for security fixes.
+Security updates are applied to the active `main` branch only unless otherwise documented.
+
+Older branches, experimental branches, local development branches, forks, and abandoned feature branches are not supported for security fixes.
 
 ## Reporting a Vulnerability
 
@@ -20,53 +16,83 @@ Report security concerns privately to:
 
 **security@arbitersystems.ai**
 
-Include:
+Include as much detail as possible:
 
-- Repository: `arbiter-systems/.github`
-- Affected file, workflow, template, or configuration
+- Repository: `arbiter-systems/ai-service`
+- Affected endpoint, route, workflow, package, configuration, or execution path
 - Reproduction steps
-- Expected security impact
-- Whether the issue could affect other Arbiter Systems repositories
-- Any relevant screenshots, links, logs, or commit references
+- Expected impact
+- Whether secrets, tenant data, prompts, completions, provider credentials, execution metadata, traces, receipts, policy decisions, or logs may be exposed
+- Any relevant logs, request examples, screenshots, commit references, or dependency versions
+- Whether the issue is actively exploitable or theoretical
+
+## Response Expectations
+
+Arbiter Systems will make a best effort to:
+
+1. Acknowledge receipt of the report.
+2. Assess severity and reproducibility.
+3. Prioritize fixes based on exploitability, data exposure risk, tenant isolation impact, execution safety impact, and operational risk.
+4. Credit the reporter when appropriate and requested.
+
+Please allow reasonable time for investigation and remediation before public disclosure.
 
 ## In Scope
 
-Reports are useful when they involve:
+Security reports are especially useful when they involve:
 
-- GitHub Actions workflow weaknesses
-- Unsafe default issue or PR templates
-- Exposure of private repository names, internal links, credentials, or operational details
-- Misleading security instructions
-- Organization-level configuration that could weaken repository security
-- Community health files that cause incorrect vulnerability-reporting behavior
-- Dependency or automation issues that are exploitable in this repository
+- Authentication or authorization bypass
+- Internal service authentication weaknesses
+- Tenant isolation failures
+- Secret leakage
+- Provider credential exposure
+- Prompt, completion, trace, receipt, execution metadata, or policy decision leakage
+- Unsafe logging or error response exposure
+- Request validation bypass
+- Unsafe execution behavior
+- Provider routing, fallback, retry, or timeout behavior that causes unsafe execution
+- SSRF, injection, deserialization, path traversal, command execution, or similar application vulnerabilities
+- Dependency vulnerabilities exploitable through the service
+- CI/CD, GitHub Actions, container, or deployment configuration weaknesses
+- Misconfigured CORS, security headers, or public API exposure
 
 ## Out of Scope
 
-The following are generally out of scope unless they show concrete security impact:
+The following are generally out of scope unless they demonstrate concrete security impact:
 
-- Typographical errors
-- Styling or formatting issues
-- General best-practice suggestions without exploitability
+- Automated scanner findings without exploitability analysis
+- Missing security headers on local-only development endpoints
+- Denial-of-service findings without practical impact
 - Social engineering
 - Physical attacks
-- Issues requiring compromised maintainer accounts or devices
-- Public information that does not expose secrets, private data, credentials, internal systems, or security-sensitive details
+- Issues requiring compromised developer machines
+- Attacks against third-party providers outside Arbiter Systems control
+- Theoretical dependency issues that are not reachable or exploitable
+- Public information disclosure that does not expose secrets, private data, prompts, completions, traces, execution metadata, provider credentials, or tenant-specific information
+
+## Data Handling and Privacy Boundary
+
+The AI service should treat all execution inputs, request metadata, provider responses, error details, tenant identifiers, routing decisions, traces, receipts, and logs as security-sensitive.
+
+Raw prompts and completions should not be logged or persisted by default. Any future storage, export, replay, analytics, or debugging path involving prompts, completions, traces, receipts, provider responses, or tenant-specific execution metadata must be explicitly reviewed before use.
 
 ## Security Design Priorities
 
-This repository should help enforce safe defaults across Arbiter Systems repositories:
+The AI service security posture prioritizes:
 
-- Private vulnerability reporting
-- Clear security contact path
-- Safe contribution guidance
-- Minimal public exposure of internal operational details
-- Conservative GitHub Actions permissions
-- No secrets committed to repository files
-- No customer, tenant, prompt, completion, trace, or execution data
+- Tenant-aware request handling
+- Prompt privacy by default
+- Secret-safe logging
+- Safe provider authentication
+- Minimal exposure of execution internals
+- Safe timeout, retry, and fallback behavior
+- Conservative request validation
+- Safe error responses
+- Reproducible execution evidence without leaking sensitive content
+- Explicit review before adding persistence, replay, analytics, or prompt/completion storage
 
 ## Coordinated Disclosure
 
 Please do not publicly disclose a vulnerability until Arbiter Systems has had reasonable time to investigate and address it.
 
-Public reports containing sensitive details may be removed or converted into private follow-up work.
+Public issues may be deleted or converted to private follow-up work when they contain sensitive details.
