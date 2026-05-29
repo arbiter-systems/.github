@@ -25,7 +25,7 @@ Every committed file should be treated as permanently public-accessible, even if
 |---|---|
 | Internal roadmap or sequencing | Implementation order, sprint plans, MVP execution plans, issue-by-issue milestone breakdowns |
 | Security audit worksheets or known gaps | Vulnerability baselines, audit findings, exception logs, plan-gated security gaps |
-| Private architecture strategy | Internal system design, moat thesis, semantic rollback, replay/simulation design |
+| Private architecture strategy | Internal system design details, private technical strategy, unreleased architecture notes |
 | Competitive positioning strategy | Competitive analysis, differentiation playbooks, win/loss details |
 | Customer or prospect information | Customer names, engagement details, pilot plans, sales scripts |
 | Secrets and credentials | API keys, tokens, passwords, private links, environment-specific config |
@@ -38,7 +38,7 @@ Every committed file should be treated as permanently public-accessible, even if
 | Material | Destination |
 |---|---|
 | Private roadmap, product strategy, execution sequencing | `arbiter-systems/internal-roadmap` |
-| Private architecture strategy, system design, moat thesis, replay/simulation design | `arbiter-systems/internal-roadmap` |
+| Private architecture strategy and internal system design | `arbiter-systems/internal-roadmap` |
 | Security audits, vulnerability baselines, known gaps | `arbiter-systems/internal-roadmap` until a dedicated private security repo exists |
 | Legal records, company admin, compliance filings | A future private `arbiter-systems/company-admin` repo, if created |
 | Customer data, prospect information | No repository; handle through appropriate secure channels |
