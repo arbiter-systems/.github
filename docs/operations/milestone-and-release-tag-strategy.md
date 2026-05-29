@@ -8,9 +8,9 @@ Milestones represent release targets, not categories or labels. Milestones set b
 
 | Milestone | Scope summary | Release Gate value | Phase value | Authority doc |
 |---|---|---|---|---|
-| Local MVP | Local, two-service MVP checkpoint for first end-to-end validation. | `local-mvp` | `mvp` | [MVP sellable completion gate](mvp-sellable-completion-gate.md) |
-| Hosted Demo | Hosted, buyer-facing demo checkpoint and readiness bar. | `hosted-demo` | `hosted-demo` | [MVP sellable completion gate](mvp-sellable-completion-gate.md) |
-| Customer Pilot | Pilot-readiness checkpoint aligned to MVP dependencies. | `customer-pilot` | `customer-pilot` | [MVP dependency map](../project/mvp-dependency-map.md) |
+| Local MVP | Local, two-service MVP checkpoint for first end-to-end validation. | `local-mvp` | `mvp` | Human-owned project fields |
+| Hosted Demo | Hosted, buyer-facing demo checkpoint and readiness bar. | `hosted-demo` | `hosted-demo` | Human-owned project fields |
+| Customer Pilot | Pilot-readiness checkpoint aligned to MVP dependencies. | `customer-pilot` | `customer-pilot` | Human-owned project fields |
 | Post-MVP | Planning bucket for work after customer-pilot readiness. | `post-mvp` | `post-mvp` | [Issue lane policy](../issue-lane-policy.md) |
 | Deferred | Parking bucket for intentionally deferred issues. | `none` | `N/A` | [Issue lane policy](../issue-lane-policy.md) |
 
@@ -75,6 +75,4 @@ This document does not cover release automation, changelog generation automation
 - [GitHub Project operating model](github-project-operating-model.md)
 - [Issue lane policy](../issue-lane-policy.md)
 - [GitHub label taxonomy](github-label-taxonomy.md)
-- [MVP sellable completion gate](mvp-sellable-completion-gate.md)
-- [MVP dependency map](../project/mvp-dependency-map.md)
 - [GitHub security baseline matrix](github-security-baseline-matrix.md)

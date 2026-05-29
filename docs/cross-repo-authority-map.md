@@ -11,15 +11,13 @@ This map identifies which document is authoritative when guidance overlaps acros
 | GitHub Project field semantics, execution state, and conflict resolution | github-project-operating-model.md | docs/operations/github-project-operating-model.md | Field wins over label when they disagree. |
 | Issue metadata block keys and allowed values for automated hydration | project-field-hydration.md | docs/project-field-hydration.md | Metadata values must match GitHub Project field option values, not label taxonomy values. |
 | Label taxonomy, family definitions, and repo-level label usage | github-label-taxonomy.md | docs/operations/github-label-taxonomy.md | Labels are taxonomy and routing aids; they do not override GitHub Project fields. |
-| Public-facing copy, terminology, and approved product framing | content-style-guide.md | docs/product/content-style-guide.md | mvp-claim-guardrails.md is authoritative for numeric claim limits. |
-| Approved and disallowed MVP claim language for public copy, demos, and PRs | mvp-claim-guardrails.md | docs/operations/mvp-claim-guardrails.md | Canonical source for claim language; update content-style-guide.md to match when claim language changes. |
 | Repo-local implementation behavior and agent instructions | each repo's own AGENTS.md | AGENTS.md in the relevant repository | .github/AGENTS.md governs this repo only; implementation repositories own their own AGENTS.md. |
 
 ## Cross-Repo Scope Boundaries
 
 | Repository | Owns | Does Not Own |
 | --- | --- | --- |
-| .github | shared operating model, label taxonomy, GitHub Project field hydration docs, issue lane policy, product copy guidance, claim guardrails | product source code, service contracts, private roadmap |
+| .github | shared operating model, label taxonomy, GitHub Project field hydration docs, issue lane policy | product source code, service contracts, private roadmap |
 | control-plane-api / ai-execution-service | service-local runtime docs and implemented API contracts | operating model, label definitions, public copy governance |
 | arbiter-site | public-safe site copy and buyer-facing docs | implementation details, private roadmap |
 | arbiter-console | frontend/operator-console setup and scope docs | operating model, backend contracts |
@@ -28,7 +26,6 @@ This map identifies which document is authoritative when guidance overlaps acros
 ## Conflict Resolution Rules
 
 - When a GitHub Project field and a label disagree, the GitHub Project field is authoritative.
-- When content-style-guide.md and mvp-claim-guardrails.md disagree on claim language, mvp-claim-guardrails.md is authoritative; update the style guide to match.
 - When a repo-local AGENTS.md conflicts with .github/AGENTS.md, the repo-local AGENTS.md governs behavior inside that repo.
 - Do not copy internal-roadmap content into public repos without explicit sanitization and human approval.
 
@@ -38,6 +35,4 @@ This map identifies which document is authoritative when guidance overlaps acros
 - [github-project-operating-model.md](operations/github-project-operating-model.md)
 - [github-label-taxonomy.md](operations/github-label-taxonomy.md)
 - [project-field-hydration.md](project-field-hydration.md)
-- [content-style-guide.md](product/content-style-guide.md)
-- [mvp-claim-guardrails.md](operations/mvp-claim-guardrails.md)
 - [issue-lane-policy.md](issue-lane-policy.md)

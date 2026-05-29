@@ -317,7 +317,6 @@ The following are explicitly out of scope for the MVP integration contract:
 ## Related Docs and Issues
 
 - [MVP Backend Baseline](./mvp-backend-baseline.md)
-- [MVP Claim Guardrails](./mvp-claim-guardrails.md)
 - [MVP Cost Controls](./mvp-cost-controls.md)
 - [Local Two-Service Docker Validation - 2026-05-16](./local-two-service-validation-results.md)
 - Sellable MVP epic: arbiter-systems/control-plane-api#133
