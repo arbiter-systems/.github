@@ -53,10 +53,9 @@ This document records documented expectations and classification rules. It does 
 
 ## Owner/Admin Verification
 
-Live repository settings must be verified by a GitHub owner/admin. Use the existing audit worksheet: [GitHub security audit](github-security-audit.md). This matrix is a baseline policy reference, not proof of live enforcement.
+Live repository settings must be verified by a GitHub owner/admin. This matrix is a baseline policy reference, not proof of live enforcement.
 
 ## Related Documents
 
-- [GitHub security audit](github-security-audit.md)
 - [Dependency vulnerability baseline](dependency-vulnerability-baseline.md)
 - [Branch protection and merge policy](branch-protection-and-merge-policy.md)

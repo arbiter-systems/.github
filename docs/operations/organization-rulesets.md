@@ -6,7 +6,7 @@ This document defines the intended organization ruleset plan for active Arbiter 
 
 ## Verification Boundary
 
-This document records intended governance posture only. It does not confirm live GitHub settings. Live rulesets must be verified by an owner/admin. Manual verification should be tracked through [GitHub security audit](github-security-audit.md).
+This document records intended governance posture only. It does not confirm live GitHub settings. Live rulesets must be verified by an owner/admin.
 
 ## Ruleset Definitions
 
@@ -89,7 +89,7 @@ This document records intended governance posture only. It does not confirm live
 - Confirm ruleset enforcement mode.
 - Confirm any plan-gated ruleset features.
 - Verify settings in each active repository.
-- Record verification status in [GitHub security audit](github-security-audit.md).
+- Record verification status through the owner/admin process.
 
 ## Intentionally Deferred
 
@@ -107,5 +107,4 @@ This document records intended governance posture only. It does not confirm live
 - [Branch protection and merge policy](branch-protection-and-merge-policy.md)
 - [PR quality gates](pr-quality-gates.md)
 - [GitHub security baseline matrix](github-security-baseline-matrix.md)
-- [GitHub security audit](github-security-audit.md)
 - [Milestone and release tag strategy](milestone-and-release-tag-strategy.md)
