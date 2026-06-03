@@ -10,7 +10,7 @@ Labels remain useful, but they serve a different role. Labels are taxonomy, rout
 
 | Field name | Type | Allowed values | Who manages it | Agent read/write permission |
 |---|---|---|---|---|
-| Repo | Single select | `.github`, `control-plane-api`, `ai-execution-service`, `arbiter-console`, `arbiter-site`, `internal-roadmap` | Human | Read only |
+| Repo | Single select | `.github`, `control-plane-api`, `ai-execution-service`, `arbiter-console`, `arbiter-site`, `company` | Human | Read only |
 | Phase | Single select | `foundation`, `mvp`, `hosted-demo`, `customer-pilot`, `post-mvp` | Human with triage support | Read; recommend changes; write only when explicitly directed by a Human owner |
 | Lane | Single select | `active-mvp`, `deferred` | Human | Read only |
 | Project Priority | Single select | `High`, `Medium`, `Low` | Human | Read only |

@@ -162,7 +162,7 @@ Existing uses of stock labels should be cleaned up in a separate issue-label cle
 | `arbiter-systems/.github` | `area/docs`, `area/ci`, `area/governance`, `area/architecture`, `component/ops`, `component/platform` |
 | `arbiter-systems/arbiter-site` | `area/docs`, `area/ci`, `area/site`, `area/demo`, `component/platform`, `component/infrastructure` |
 | `arbiter-systems/arbiter-console` | `area/observability`, `area/governance`, `area/console`, `area/demo`, `component/platform`, `component/core` |
-| `arbiter-systems/internal-roadmap` | `area/governance`, `area/provenance`, `area/docs`, `area/architecture`, `area/mvp`, `type/epic`, `component/ops` |
+| `arbiter-systems/company` | `area/governance`, `area/provenance`, `area/docs`, `area/architecture`, `area/mvp`, `type/epic`, `component/ops` |
 
 ## Examples
 

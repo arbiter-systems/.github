@@ -21,13 +21,13 @@ This map identifies which document is authoritative when guidance overlaps acros
 | control-plane-api / ai-execution-service | service-local runtime docs and implemented API contracts | operating model, label definitions, public copy governance |
 | arbiter-site | public-safe site copy and buyer-facing docs | implementation details, private roadmap |
 | arbiter-console | frontend/operator-console setup and scope docs | operating model, backend contracts |
-| internal-roadmap | confidential long-term strategy and private roadmap material only | public-facing documentation, service contracts, implementation source |
+| company | confidential long-term strategy and private roadmap material only | public-facing documentation, service contracts, implementation source |
 
 ## Conflict Resolution Rules
 
 - When a GitHub Project field and a label disagree, the GitHub Project field is authoritative.
 - When a repo-local AGENTS.md conflicts with .github/AGENTS.md, the repo-local AGENTS.md governs behavior inside that repo.
-- Do not copy internal-roadmap content into public repos without explicit sanitization and human approval.
+- Do not copy company content into public repos without explicit sanitization and human approval.
 
 ## Related Documents
 

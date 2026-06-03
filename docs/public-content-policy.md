@@ -37,9 +37,9 @@ Every committed file should be treated as permanently public-accessible, even if
 
 | Material | Destination |
 |---|---|
-| Private roadmap, product strategy, execution sequencing | `arbiter-systems/internal-roadmap` |
-| Private architecture strategy and internal system design | `arbiter-systems/internal-roadmap` |
-| Security audits, vulnerability baselines, known gaps | `arbiter-systems/internal-roadmap` until a dedicated private security repo exists |
+| Private roadmap, product strategy, execution sequencing | `arbiter-systems/company` |
+| Private architecture strategy and internal system design | `arbiter-systems/company` |
+| Security audits, vulnerability baselines, known gaps | `arbiter-systems/company` until a dedicated private security repo exists |
 | Legal records, company admin, compliance filings | A future private `arbiter-systems/company-admin` repo, if created |
 | Customer data, prospect information | No repository; handle through appropriate secure channels |
 

@@ -11,7 +11,7 @@ Each active Arbiter repository deploys a `.github/workflows/add-to-project.yml` 
 - `arbiter-systems/ai-execution-service`
 - `arbiter-systems/arbiter-console`
 - `arbiter-systems/arbiter-site`
-- `arbiter-systems/internal-roadmap`
+- `arbiter-systems/company`
 
 ## Required secret
 

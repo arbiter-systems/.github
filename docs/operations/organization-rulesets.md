@@ -76,7 +76,7 @@ This document records intended governance posture only. It does not confirm live
 | `arbiter-systems/ai-execution-service` | application/code | Required | Not Applicable | Deferred | Required | `validate`, `lint`, `typecheck`, `test`, `build` | Backend service; apply release-protection when the first release branch is introduced; apply tag-protection before creating the first release tag. |
 | `arbiter-systems/arbiter-console` | application/code | Required | Not Applicable | Deferred | Required | `validate`, `lint`, `typecheck`, `test`, `build` | Frontend application; apply release-protection when the first release branch is introduced; apply tag-protection before creating the first release tag. |
 | `arbiter-systems/arbiter-site` | application/code | Required | Not Applicable | Deferred | Required | `validate`, `lint`, `typecheck`, `build`, `docs` | Frontend/docs hybrid; apply release-protection when the first release branch is introduced; apply tag-protection before creating the first release tag. |
-| `arbiter-systems/internal-roadmap` | documentation/admin | Required | Not Applicable | Deferred | Required | None documented yet | Private docs/admin repo; apply main-protection and branch-name convention, with no CI checks documented yet. |
+| `arbiter-systems/company` | documentation/admin | Required | Not Applicable | Deferred | Required | None documented yet | Private docs/admin repo; apply main-protection and branch-name convention, with no CI checks documented yet. |
 
 ## Owner/Admin Manual Steps
 
