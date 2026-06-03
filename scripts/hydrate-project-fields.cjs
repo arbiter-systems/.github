@@ -17,7 +17,6 @@ const SUPPORTED_METADATA_KEYS = new Set([
   "project",
   "repo",
   "status",
-  "lane",
   "project_priority",
   "phase",
   "release_gate",
@@ -46,15 +45,6 @@ const FIELD_CONFIG = {
       done: "Done",
       deferred: "Deferred",
       "do not implement yet": "Do Not Implement Yet",
-    },
-  },
-  lane: {
-    type: "single-select",
-    required: false,
-    candidates: ["Lane"],
-    values: {
-      "active-mvp": "active-mvp",
-      deferred: "deferred",
     },
   },
   project_priority: {
@@ -342,13 +332,6 @@ function mapLabelsToFieldHints(labels) {
   }
   if (normalized.has("triage") || normalized.has("status: triage")) {
     statusMatches.push("Triage");
-  }
-
-  let lane = null;
-  if (laneMatches.length === 1) {
-    lane = laneMatches[0];
-  } else if (laneMatches.length > 1) {
-    warnings.push(`multiple lane labels matched: ${laneMatches.join(", ")}; skipping lane inference`);
   }
 
   let priority = null;
@@ -705,7 +688,6 @@ function buildHydrationCandidates(metadata, labelHints, currentByField, fields) 
   const notes = [];
   const candidates = [];
   addFieldCandidate("status", candidates, notes, metadata, currentByField, fields, { labelHintValue: labelHints.status, defaultValue: "Inbox", noteIfOccupied: true });
-  addFieldCandidate("lane", candidates, notes, metadata, currentByField, fields, { labelHintValue: labelHints.lane });
   addFieldCandidate("project_priority", candidates, notes, metadata, currentByField, fields, { labelHintValue: labelHints.priority });
   addExplicitMetadataCandidates(candidates, metadata);
   return { candidates, notes };
