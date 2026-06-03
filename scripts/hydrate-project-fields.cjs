@@ -307,14 +307,6 @@ function mapLabelsToFieldHints(labels) {
 
   const warnings = [];
 
-  const laneMatches = [];
-  if (normalized.has("active-mvp") || normalized.has("lane: active-mvp")) {
-    laneMatches.push("active-mvp");
-  }
-  if (normalized.has("deferred") || normalized.has("lane: deferred")) {
-    laneMatches.push("deferred");
-  }
-
   const priorityMatches = [];
   if (normalized.has("priority: high")) {
     priorityMatches.push("High");
