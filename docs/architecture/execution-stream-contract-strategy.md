@@ -1,13 +1,15 @@
 # Execution Stream Contract Strategy
 
 Status: MVP coordination guidance  
-Scope: Documentation-only strategy for shared execution stream schemas and deterministic fixtures
+Scope: Documentation-only coordination strategy for execution stream contract alignment
 
 ## Purpose
 
-This document defines the cross-repo source-of-truth strategy for Arbiter's execution stream contract schema and deterministic fixtures. Its goal is to prevent drift between `control-plane-api` and `ai-execution-service` as the MVP adds execution receipts, outcome classification, provider adapters, policy explanations, and cost/waste metadata.
+This document defines cross-repo coordination guidance for Arbiter's execution stream contract schema expectations and deterministic fixture categories. Its goal is to prevent drift between `control-plane-api` and `ai-execution-service` as the MVP adds execution receipts, outcome classification, provider adapters, policy explanations, and cost/waste metadata.
 
-This strategy is coordination guidance only. It does not create schema files, fixture files, validation scripts, runtime behavior, or transport changes.
+This strategy is coordination guidance only. It does not create schema files, fixture files, validation scripts, runtime behavior, transport changes, or a new ownership model for service contract artifacts.
+
+Per [cross-repo-authority-map.md](../cross-repo-authority-map.md), `.github` owns shared operating guidance, label taxonomy, GitHub Project field hydration docs, and issue lane policy. It does not own service contracts. Implemented API contracts, executable schemas, fixtures, and contract tests belong in the implementation repositories that own the relevant runtime behavior.
 
 ## Related issues
 
@@ -28,25 +30,19 @@ The internal NDJSON contract is the shared execution event contract between serv
 
 The AI Execution Service must not own caller-facing SSE semantics. It emits normalized NDJSON events only. The Control Plane adapts those internal events into external SSE events, applies caller-facing error mapping, and owns any API-specific stream presentation rules.
 
-## Canonical ownership and source of truth
+## Ownership and source-of-truth boundaries
 
-For the MVP, the `.github` repository is the coordination source of truth for cross-repo contract documentation and future canonical contract artifacts.
-
-If canonical execution stream schema files are added later, they should live in one shared location under `.github`, such as:
-
-```text
-contracts/execution-stream/v1/
-```
-
-or another path selected by a dedicated follow-up implementation issue.
-
-Consuming repositories may keep local generated copies, test snapshots, or checked-in validation fixtures only when those copies are protected by explicit drift checks. Duplicated schema files without validation are not considered source of truth.
+For the MVP, `.github` is the coordination home for cross-repo contract strategy only. It is not the canonical owner of executable schema files, deterministic fixture files, implemented service contracts, runtime validators, or contract tests.
 
 Expected ownership model:
 
-- `.github` owns cross-repo strategy, contract documentation, and future canonical schema/fixture definitions.
-- `control-plane-api` consumes the contract for parsing, sequencing, terminal handling, SSE adaptation, receipt derivation, and outcome derivation.
-- `ai-execution-service` consumes the contract for emitted NDJSON shape, provider failure normalization, sequence monotonicity, and terminal event guarantees.
+- `.github` owns coordination guidance, cross-repo naming/versioning expectations, fixture category expectations, privacy constraints, and issue-linking guidance.
+- `control-plane-api` owns caller-facing SSE behavior, Control Plane validation and translation behavior, receipt/outcome derivation from normalized events, and its own contract tests or fixtures for those behaviors.
+- `ai-execution-service` owns internal NDJSON emission behavior, provider-normalized event shape, sequence monotonicity, terminal event guarantees, and its own contract tests or fixtures for those behaviors.
+
+If concrete schema files, fixture files, or validation scripts are added later, the follow-up implementation issue must place them in the repo that owns the implemented behavior unless a separate authority-map change is intentionally reviewed and approved.
+
+Cross-repo reuse is still allowed. A service repo may consume generated snapshots, copied fixtures, or shared examples from another repo when an explicit drift check or review workflow protects the copy. Duplicated schema or fixture files without validation are not considered authoritative.
 
 ## Protocol versioning
 
@@ -104,18 +100,18 @@ The Control Plane may map invalid internal streams into safe external failures, 
 
 ## Fixture strategy
 
-Canonical fixtures should be deterministic, small, and safe for public repositories. This issue documents the target fixture set only; it does not implement the fixture files.
+Fixtures should be deterministic, small, and safe for public repositories. This document defines expected fixture categories only; it does not implement fixture files or assign `.github` ownership over executable fixtures.
 
-Target valid fixtures:
+Target valid fixture categories:
 
-| Fixture | Purpose |
+| Fixture category | Purpose |
 | --- | --- |
 | `valid-token-final.ndjson` | Valid stream with one or more token events followed by a final terminal event. |
 | `valid-error.ndjson` | Valid stream ending in an error terminal event. |
 
-Target invalid fixtures:
+Target invalid fixture categories:
 
-| Fixture | Purpose |
+| Fixture category | Purpose |
 | --- | --- |
 | `invalid-missing-terminal.ndjson` | Stream ends without `final` or `error`. |
 | `invalid-sequence-regression.ndjson` | Stream contains a sequence value lower than a previous sequence value. |
@@ -128,7 +124,7 @@ Target invalid fixtures:
 
 ### `control-plane-api`
 
-The Control Plane should use canonical fixtures or generated local snapshots to validate:
+The Control Plane should use service-owned fixtures, generated local snapshots, or repo-local contract test inputs to validate:
 
 - NDJSON parsing
 - event sequence handling
@@ -143,7 +139,7 @@ The Control Plane should use canonical fixtures or generated local snapshots to 
 
 ### `ai-execution-service`
 
-The AI Execution Service should use canonical fixtures or generated local snapshots to validate:
+The AI Execution Service should use service-owned fixtures, generated local snapshots, or repo-local contract test inputs to validate:
 
 - emitted NDJSON event shape
 - provider failure normalization
@@ -152,6 +148,18 @@ The AI Execution Service should use canonical fixtures or generated local snapsh
 - invalid provider-output rejection before emission
 - deterministic fake provider scenario output
 - compatibility with Control Plane expectations
+
+## Drift-prevention guidance
+
+Follow-up implementation issues that add concrete schema or fixture artifacts should define how drift is detected. Acceptable approaches include:
+
+- contract tests in both service repos that assert the same event shape and terminal rules
+- generated snapshots with explicit regeneration instructions
+- copied fixtures protected by checksum, golden-file, or CI comparison checks
+- PR evidence showing both service repos were reviewed for contract-impacting changes
+- issue links between producer-side and consumer-side contract changes
+
+Drift prevention should not depend on `.github` becoming the artifact owner unless the authority map is intentionally changed.
 
 ## Privacy and public fixture constraints
 
@@ -177,7 +185,7 @@ Fixtures should demonstrate contract behavior, not real AI content.
 
 Execution receipts and outcome classification consume normalized execution events. They should not depend on provider-specific payloads or transport-specific SSE formatting.
 
-Provider adapters should normalize provider-specific failures before those failures reach the shared execution stream contract. The shared contract should expose stable failure categories and safe metadata that the Control Plane can use for outcomes, receipts, policy explanations, and cost/waste reporting.
+Provider adapters should normalize provider-specific failures before those failures reach the internal execution stream contract. The contract should expose stable failure categories and safe metadata that the Control Plane can use for outcomes, receipts, policy explanations, and cost/waste reporting.
 
 Cost and waste metadata should be additive unless a future issue defines a breaking contract revision. Policy explanation fields should remain structured, deterministic, and safe for logs, receipts, test snapshots, and public examples.
 
@@ -187,13 +195,13 @@ Future provider adapters must preserve the same internal event contract even whe
 
 Follow-up implementation issues are needed only when Arbiter is ready to add concrete artifacts. Possible follow-ups:
 
-- create canonical execution stream schema files
-- add deterministic valid and invalid fixture files
+- add execution stream schema files to the service repo that owns the implemented behavior
+- add deterministic valid and invalid fixture files to the relevant service repo
 - add cross-repo schema or fixture drift validation
-- wire canonical fixtures into `control-plane-api` tests
-- wire canonical fixtures into `ai-execution-service` tests
+- wire service-owned fixtures into `control-plane-api` tests
+- wire service-owned fixtures into `ai-execution-service` tests
 
-These follow-ups should remain separate from this documentation-only strategy.
+These follow-ups should remain separate from this documentation-only strategy and must respect the ownership boundaries in [cross-repo-authority-map.md](../cross-repo-authority-map.md).
 
 ## Non-goals
 
@@ -211,6 +219,7 @@ This document does not implement:
 - fixture files
 - validation scripts
 - test changes
+- service contract artifact ownership in `.github`
 
 ## Validation
 
