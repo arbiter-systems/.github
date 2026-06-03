@@ -38,6 +38,9 @@ Keep all content public-safe.
 - Prefer concise markdown.
 - Avoid implementation promises that are not already true or explicitly approved.
 - Keep organization profile content aligned with Arbiter Systems as AI infrastructure for controlled, observable, reliable model execution.
+- Use [Public MVP Feature Language](docs/product/public-mvp-feature-language.md) for product-facing public docs, demo copy, issue summaries, and public-safe overview language.
+- Keep code, architecture, API contract, configuration, and implementation docs free to use engineering primitive names when they are clearer and more precise.
+- Do not let product-facing names expand runtime scope, Project fields, labels, epics, or acceptance criteria by themselves.
 
 ## Usage and Review Discipline
 
