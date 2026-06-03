@@ -348,7 +348,7 @@ function mapLabelsToFieldHints(labels) {
     warnings.push(`multiple status labels matched: ${statusMatches.join(", ")}; skipping status inference`);
   }
 
-  return { lane, priority, status, warnings };
+  return { priority, status, warnings };
 }
 
 function base64Url(input) {
