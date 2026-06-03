@@ -6,6 +6,8 @@ Use this guide to route Arbiter MVP issues consistently across epics, GitHub Pro
 
 Project fields remain the execution source of truth. Labels classify work. Epics coordinate cross-repo outcomes.
 
+This guide extends the [GitHub Project operating model](github-project-operating-model.md) and [GitHub label taxonomy](github-label-taxonomy.md). When those documents discuss Project field semantics or labels generally, use this guide for the specific epic coordination, issue-routing, Project view, and duplicate Project-field label rules.
+
 ## Epic Coordination Model
 
 Use one parent MVP epic plus focused child coordination epics.
@@ -113,3 +115,10 @@ Keep those concepts in GitHub Project fields or issue relationships.
 - Do not create more epics.
 - Do not modify product source-code repos.
 - Do not create replacement fields for `Agent Status` or `Lane`.
+
+## Related Documents
+
+- [GitHub Project operating model](github-project-operating-model.md)
+- [GitHub label taxonomy](github-label-taxonomy.md)
+- [Issue lane policy](../issue-lane-policy.md)
+- [Milestone and release tag strategy](milestone-and-release-tag-strategy.md)
