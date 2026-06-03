@@ -80,20 +80,22 @@ Examples:
 - future runtime leakage validation
 - future hosted-demo runbooks
 
-## Gaps before customer pilots
+## Customer pilot readiness
 
-Before customer pilots, Arbiter should avoid formal compliance claims and close or explicitly track gaps such as:
+Before customer pilots, Arbiter should avoid formal compliance claims and confirm that security, privacy, operational, and data-handling expectations are reviewed in the appropriate private planning location.
 
-- live repository security setting verification
-- secrets and push-protection status by repo
-- hosted-demo secret handling model
-- runtime log leakage validation
-- incident response contact and intake process
-- customer data handling statement
-- data retention boundaries for receipts, traces, logs, and demo data
-- provider/vendor inventory
-- basic access review process
-- backup/recovery expectations for hosted-demo components
+Public documentation should describe readiness categories at a high level without advertising unresolved security gaps, internal verification status, or private operational details.
+
+Customer pilot readiness should be tracked privately across areas such as:
+
+- repository and access security posture
+- secrets and credential handling
+- hosted-demo operating boundaries
+- runtime log and sensitive-data safety
+- incident intake and response expectations
+- customer data handling and retention boundaries
+- provider and vendor usage boundaries
+- recovery and continuity expectations
 
 ## MVP security hygiene vs formal compliance readiness
 
