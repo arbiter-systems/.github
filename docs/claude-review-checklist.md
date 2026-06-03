@@ -70,6 +70,11 @@ A review-only task does not authorize Claude to create branches, commits, pushes
 - [ ] Public docs do not expose internal roadmap or private strategy.
 - [ ] Customer-facing claims match the relevant claim-guardrails documentation where one exists.
 - [ ] API and contract docs match the implemented behavior where relevant.
+- [ ] Product-facing names align with [Public MVP Feature Language](product/public-mvp-feature-language.md) when used in public docs.
+- [ ] Cost and savings claims are bounded as estimates or targets unless billing-grade pricing is implemented.
+- [ ] Prompt privacy claims are limited to implemented defaults and documented opt-in logging behavior.
+- [ ] Compliance, audit, certification, simulation, replay, marketplace, and provider-behavior claims do not exceed implemented scope.
+- [ ] AI Control Simulation / Shadow Mode Lite language is recommendation-only unless enforcement is explicitly implemented.
 
 ## Follow-up Extraction
 
