@@ -4,6 +4,8 @@
 
 Arbiter Systems repositories use a shared GitHub label taxonomy so backlog triage, implementation ordering, cross-repo planning, and issue cleanup stay consistent as work moves across backend services, public web properties, console work, and organization operations.
 
+For product-facing feature names used in issue titles, docs, demos, and UI labels, use the shared [Arbiter Product Naming Guidance](../product-naming.md). Labels classify work; product names describe user-facing concepts.
+
 ## Labels vs. GitHub Project Fields
 
 ### Role of Labels
@@ -180,6 +182,17 @@ Existing uses of stock labels should be cleaned up in a separate issue-label cle
 
 - Post-MVP semantic routing work deferred from active sprint:
   `type/feature`, `priority/low`, `phase/post-mvp`, `area/routing`, `area/resilience`, `component/routing`
+
+## Product Naming Examples
+
+Product-facing issue titles should use the vocabulary in [Arbiter Product Naming Guidance](../product-naming.md) when the issue affects user-facing behavior, docs, demos, or UI labels.
+
+Examples:
+
+- `docs(site): explain Floodgate surge controls in public copy`
+- `feat(console): add Decision Record panel to Execution Receipt view`
+- `docs(product): document Black Box evidence and Execution Receipt structure`
+- `feat(api): add Damage Report fields to execution summary`
 
 ## Triage Rules
 
