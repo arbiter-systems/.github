@@ -50,7 +50,7 @@ const FIELD_CONFIG = {
   },
   lane: {
     type: "single-select",
-    required: true,
+    required: false,
     candidates: ["Lane"],
     values: {
       "active-mvp": "active-mvp",
