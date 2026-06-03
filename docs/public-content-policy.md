@@ -19,6 +19,24 @@ Every committed file should be treated as permanently public-accessible, even if
 
 > When in doubt, keep the material private until a human reviewer confirms it is public-safe.
 
+## Public Product-Language Guardrails
+
+Public content may use sanitized MVP terms from [Public MVP Feature Language](product/public-mvp-feature-language.md), but it must remain accurate and bounded.
+
+Do not publish public claims that imply:
+
+- guaranteed savings or guaranteed token reduction
+- billing-grade cost attribution unless billing-grade pricing is implemented
+- compliance certification, audit certification, or regulatory approval
+- provider marketplace, provider benchmarking, or autonomous provider procurement behavior
+- replay, deterministic simulation, semantic transactions, rollback, or compensation beyond explicitly implemented Shadow Mode Lite / AI Control Simulation behavior
+- raw prompt storage guarantees beyond implemented defaults and documented opt-in logging behavior
+- sensitive-context routing enforcement unless the specific enforcement path is implemented
+
+Safe public phrasing should use bounded language such as "targets," "estimates," "metadata-first," "by default," "where available," or "recommendation-only" when the capability is not a hard runtime guarantee.
+
+Product-facing names must not create new runtime scope, Project fields, labels, epics, or acceptance criteria by themselves.
+
 ## Disallowed Content
 
 | Category | Examples |
@@ -49,9 +67,11 @@ Every committed file should be treated as permanently public-accessible, even if
 - Security posture documents and governance docs require controlled-file review per [controlled-file policy](operations/controlled-file-policy.md).
 - Agent instruction files such as `AGENTS.md`, and any future repo-specific agent instruction files, require explicit human instruction before edits that change agent behavior.
 - Apply the review requirements in [controlled-file policy](operations/controlled-file-policy.md) before committing governance, security, or automation files.
+- Review public product language against [Public MVP Feature Language](product/public-mvp-feature-language.md) before publishing claims about cost, privacy, compliance, simulation, provider behavior, or sensitive-context handling.
 
 ## Relationship to Other Policies
 
 - [AGENTS.md](../AGENTS.md) - Repo role, ownership boundaries, and non-negotiables.
 - [Controlled file policy](operations/controlled-file-policy.md) - Controlled-file review and disclosure requirements.
 - [GitHub label taxonomy](operations/github-label-taxonomy.md) - Label routing for `.github` issues, including `area/docs`, `area/governance`, and `component/ops`.
+- [Public MVP Feature Language](product/public-mvp-feature-language.md) - Public-safe product names and claim boundaries.
