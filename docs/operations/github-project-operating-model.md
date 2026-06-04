@@ -12,7 +12,7 @@ Labels remain useful, but they serve a different role. Labels are taxonomy, rout
 |---|---|---|---|---|
 | Repo | Single select | `.github`, `control-plane-api`, `ai-execution-service`, `arbiter-console`, `arbiter-site`, `company` | Human | Read only |
 | Phase | Single select | `foundation`, `mvp`, `hosted-demo`, `customer-pilot`, `post-mvp` | Human with triage support | Read; recommend changes; write only when explicitly directed by a Human owner |
-| Lane | Single select | `active-mvp`, `deferred` | Human | Read only |
+| Lane | Single select | `active-mvp`, `deferred` | Human | Read only; active use should stop unless a single non-overlapping meaning is explicitly retained |
 | Project Priority | Single select | `High`, `Medium`, `Low` | Human | Read only |
 | Status | Single select | `Inbox`, `Triage`, `Ready`, `In Progress`, `Review`, `Blocked`, `Done`, `Deferred`, `Do Not Implement Yet` | Human for approval and scope states; shared for active execution states | Read; write only for `In Progress`, `Review`, and `Blocked` when user-scoped and human-approved |
 | Implementation Order | Number | Numeric ordering within a lane or milestone; blank when unordered | Human | Read only |
@@ -24,20 +24,35 @@ Labels remain useful, but they serve a different role. Labels are taxonomy, rout
 | Confidence | Single select | `high`, `medium`, `low` | Human with triage support | Read/write |
 | Implementation Readiness | Single select | `not-ready`, `needs-clarification`, `ready` | Human with triage support | Read/write |
 | Scope Risk | Single select | `low`, `medium`, `high` | Human with triage support | Read/write |
-| Workstream | Single select | `GitHub Project Management`, `MVP Execution`, `Security & Compliance`, `Documentation & Site`, 
-  `Infrastructure & Ops` | Human | Read only |
+| Workstream | Single select | `GitHub Project Management`, `MVP Execution`, `Security & Compliance`, `Documentation & Site`, `Infrastructure & Ops` | Human | Read only |
 
 Field naming note: legacy references to a plain `Priority` field should be interpreted as `Project Priority`.
 
 Repo field note: the `Repo` allowed values list is Human-maintained and must be updated when repositories are added to or removed from organization project scope.
 
+`Agent Status` should not be used as an active Project field. `Agent`, `Status`, and `Implementation Readiness` already cover next actor, workflow state, and actionability.
+
+## Simplified Field Semantics
+
+Use the smallest field set that keeps execution decisions clear:
+
+- `Status` = workflow state.
+- `Agent` = next actor, such as `Claude`, `Codex`, `Copilot`, or `Human`/`none` where the Project allows it.
+- `Implementation Readiness` = whether the issue is actionable.
+- `Project Priority` = relative importance.
+- `Implementation Order` = execution sequence.
+- `Blocked By` = dependency or decision blocker.
+- `Repo`, `Workstream`, `Phase`, `Release Gate`, `Scope Risk`, `Validation Command`, and `Last Reviewed` = project context and triage metadata.
+
+Do not create replacement fields for `Agent Status` or `Lane`. If `Lane` remains visible in older views, treat it as legacy scope context only. Prefer `Status`, `Phase`, `Release Gate`, and `Implementation Readiness` for active planning.
+
 ## Issue Lifecycle States
 
 | State | Entry condition | Exit condition | Who moves it |
 |---|---|---|---|
-| Inbox | New issue exists but has not been classified in the project. | Repo, lane, and initial status are assigned. | Human |
-| Triage | Issue is being classified for repo, lane, priority, and milestone fit. | Issue is routed to `Ready`, `Deferred`, `Do Not Implement Yet`, or `Blocked`. | Human |
-| Ready | Issue is in active MVP scope, fully specified, has acceptance criteria, has no blocking dependencies, and has current sprint or cycle approval. | Work starts, new blocker appears, scope changes, or human approval is withdrawn. | Human |
+| Inbox | New issue exists but has not been classified in the project. | Repo, workstream, phase, and initial status are assigned. | Human |
+| Triage | Issue is being classified for repo, priority, readiness, and milestone fit. | Issue is routed to `Ready`, `Deferred`, `Do Not Implement Yet`, or `Blocked`. | Human |
+| Ready | Issue is active-scope, fully specified, has acceptance criteria, has no blocking dependencies, and has current sprint or cycle approval. | Work starts, new blocker appears, scope changes, or human approval is withdrawn. | Human |
 | In Progress | Human or Agent is actively working the issue. | Work moves to review, becomes blocked, or is explicitly paused. | Both |
 | Review | Implementation or doc update is ready for review. | Review completes, changes are requested, or blocker is found. | Both |
 | Blocked | Dependency, approval, or missing input prevents progress, and a blocking reason or link is recorded in the issue body or comments. | Blocking condition is resolved and the issue is re-triaged. | Both |
@@ -47,9 +62,27 @@ Repo field note: the `Repo` allowed values list is Human-maintained and must be 
 
 Promotion rules for deferred work live in [issue-lane-policy.md](../issue-lane-policy.md#promotion-process) and should be applied there rather than restated here.
 
-Ready and Blocked semantics are governed by [issue-lane-policy.md](../issue-lane-policy.md#lane-and-status-definitions). Agents may recommend that an issue be moved to `Ready`, but they must not self-promote an issue into `Ready`; human approval is required before `status: ready` or `Ready` is applied.
+Ready and Blocked semantics are governed by [issue-lane-policy.md](../issue-lane-policy.md#lane-and-status-definitions). Agents may recommend that an issue be moved to `Ready`, but they must not self-promote an issue into `Ready`; human approval is required before `Ready` is applied.
 
 `Blocked By` may be maintained as project metadata for views and reporting, but it does not replace the canonical requirement to record a blocking reason or link in the issue body or comments.
+
+## Parent and Child Epic Coordination Model
+
+Use one parent MVP epic to represent sellable MVP completion and child coordination epics to organize execution areas. Repo-scoped issues should attach to the most specific coordination epic that owns their outcome.
+
+Recommended epic structure:
+
+- Parent MVP epic: sellable AI Execution Firewall MVP completion.
+- Contracts epic: Control Plane and AI Execution Service compatibility, request/stream schemas, snapshots, and fixtures.
+- Reliability epic: runtime safety, retries, fallback behavior, provider health, and execution outcomes.
+- Cost-control epic: budget guardrails, waste detection, retry suppression, calls avoided, and cost summaries.
+- Governance receipts epic: execution receipts, explainability, policy reasons, evidence bundles, and privacy proof.
+- Demo surface epic: console, site demo flow, fixtures, deterministic proof scenarios, and demo readiness.
+- Repository operations epic: GitHub Project operations, metadata hydration, labels, workflow governance, and process docs.
+
+Do not create duplicate epics when an existing parent or child epic already owns the outcome. Add repo-scoped implementation issues under the relevant child epic instead.
+
+Link directly to the parent MVP epic only when the issue materially affects sellable MVP completion across multiple coordination areas. Narrow implementation issues should normally route to a child epic.
 
 ## Phase and Label Relationship
 
@@ -73,11 +106,26 @@ Current live Project Workstream values are:
 
 `Workstream` is human-assigned. Agents should read `Workstream` for scope context only and should not autonomously change it.
 
+Domain-specific categories such as cost control, governance receipts, execution contracts, execution reliability, demo surface, repository operations, and semantic execution are routing concepts, labels, or epic categories. They are not valid hidden `arbiter-project` Workstream metadata values unless the live GitHub Project Workstream field options are intentionally migrated.
+
 Historical or proposed lowercase values such as `execution`, `observability`, `resilience`, `policy-governance`, `security-privacy`, `cost-control`, `demo-readiness`, `console`, `site-docs`, `repo-operations`, and `architecture` are not valid Workstream values unless the live GitHub Project field options are migrated to those values.
+
+## Issue Routing Rules
+
+Route issues by owned outcome, not by whichever repo happens to receive the first work item:
+
+- Cost-control and waste-reduction work routes to the cost-control epic.
+- Governance receipt, explainability, policy reason, evidence bundle, and prompt privacy proof work routes to the governance receipts epic.
+- Reliability, retry, fallback, provider health, runtime safety, and execution outcome work routes to the reliability epic.
+- Cross-service compatibility, execution stream schema, fixtures, snapshots, and contract drift work routes to the contracts epic.
+- Console, demo fixtures, site demo copy, proof scenarios, and controlled walkthrough work routes to the demo surface epic.
+- Repository hygiene, metadata hydration, label taxonomy, GitHub Project fields, workflow governance, and process documentation work routes to the repository operations epic.
+
+When an issue spans multiple areas, pick the epic that owns the primary acceptance criteria and list the secondary references in the issue body.
 
 ## Label vs. Project Field Conflict Resolution
 
-When a label and a Project field disagree on status, phase, or priority, the Project field is authoritative for execution decisions. Label cleanup is handled separately and does not block implementation, triage, or review once the Project field is correct.
+When a label and a Project field disagree on status, phase, priority, workstream, readiness, or ownership, the Project field is authoritative for execution decisions. Label cleanup is handled separately and does not block implementation, triage, or review once the Project field is correct.
 
 ## Milestone to Project Field Mapping
 
@@ -95,18 +143,23 @@ Milestone naming and release-tag conventions are defined in [Milestone and relea
 
 ## Project Views
 
+Recommended project views should be configured as views or saved filters, not as new fields:
+
 | View | Purpose | Filter | Group by | Sort |
 |---|---|---|---|---|
-| Active MVP | Daily working view for approved MVP issues. | `Lane = active-mvp` and `Status != Done` and `Status != Deferred` and `Status != Do Not Implement Yet` | `Repo` | `Project Priority`, `Last Reviewed` |
-| Ready for Codex | Implementation queue for issues that are specified and approved. | `Lane = active-mvp` and `Status = Ready` and `Implementation Readiness = ready` and (`Agent = Codex` or `Agent = mixed` or `Agent = none`) | `Repo` | `Project Priority`, `Confidence` |
-| Claude Review Queue | Review-only queue for architecture or diff review. | `Status = Review` and (`Agent = Claude` or `Agent = mixed`) | `Repo` | `Last Reviewed` |
-| Blocked | Surface blockers that need human action or dependency resolution. | `Status = Blocked` | `Blocked By` | `Last Reviewed` |
-| Security / Hosted Demo Gates | Track issues that gate hosted-demo and customer-pilot readiness. | `Release Gate = hosted-demo` or `Release Gate = customer-pilot` | `Release Gate` | `Project Priority`, `Repo` |
-| Cross-Repo Dependencies | Follow issues whose progress depends on another repo or epic. | `Blocked By is not empty` | `Repo` | `Blocked By`, `Project Priority` |
-| Deferred Parking Lot | Keep valid deferred work visible without treating it as implementation-ready. | `Lane = deferred` or `Status = Deferred` or `Status = Do Not Implement Yet` | `Lane` | `Last Reviewed` |
-| Repo Operations | Ops/docs/project work across organization metadata and process issues. | `Repo = .github` | `Status` | `Project Priority`, `Last Reviewed` |
-| Release Checklist | Review milestone-critical issues before buyer-facing checkpoints. | `Release Gate != none` and `Status != Done` | `Release Gate` | `Status`, `Project Priority` |
-| Recently Stale | Catch items that need re-triage or freshness review. | `Status != Done` and `Last Reviewed` is older than review cadence | `Status` | `Last Reviewed` |
+| Command Center | Daily working view for approved active work. | `Status != Done` and `Status != Deferred` and `Status != Do Not Implement Yet` | `Repo` | `Project Priority`, `Implementation Order` |
+| Epics | Parent and child coordination epics. | `type/epic` or title starts with `epic(` | `Workstream` | `Project Priority`, `Implementation Order` |
+| Implementation Queue | Issues ready for implementation. | `Status = Ready` and `Implementation Readiness = ready` | `Repo` | `Project Priority`, `Implementation Order` |
+| Blocked / Needs Decision | Work blocked by dependency, approval, or missing decision. | `Status = Blocked` or `Blocked By is not empty` | `Blocked By` | `Project Priority`, `Last Reviewed` |
+| MVP Outcome Areas | Active MVP work grouped by outcome. | `Phase = mvp` and `Status != Done` | `Workstream` or labels | `Project Priority`, `Implementation Order` |
+| Cross-Repo Contracts | Contract, fixture, schema, and compatibility work. | `component/contracts` or `area/execution` plus cross-repo dependency references | `Repo` | `Blocked By`, `Project Priority` |
+| Docs / Ops Hygiene | Documentation, taxonomy, workflow, and metadata hygiene work. | `area/docs` or `component/ops` | `Repo` | `Project Priority`, `Last Reviewed` |
+| Agent Queue / Ready for Codex | Codex-ready work. | `Status = Ready` and `Implementation Readiness = ready` and (`Agent = Codex` or `Agent = mixed` or `Agent = none`) | `Repo` | `Project Priority`, `Confidence` |
+| Needs Claude | Architecture, planning, review, or scope-control queue. | `Agent = Claude` or `Agent = mixed` or `Status = Review` | `Repo` | `Last Reviewed` |
+| Human Decisions | Work requiring approval or triage. | `Status = Inbox` or `Status = Triage` or `Status = Blocked` | `Status` | `Project Priority`, `Last Reviewed` |
+| Security / Hosted Demo Gates | Security, privacy, hosted-demo, and customer-pilot gates. | `Release Gate = hosted-demo` or `Release Gate = customer-pilot` or `Workstream = Security & Compliance` | `Release Gate` | `Project Priority`, `Repo` |
+| Deferred Parking Lot | Valid deferred work not ready for implementation. | `Status = Deferred` or `Status = Do Not Implement Yet` | `Status` | `Last Reviewed` |
+| Recently Stale | Items that need re-triage or freshness review. | `Status != Done` and `Last Reviewed` is older than review cadence | `Status` | `Last Reviewed` |
 
 ## Dependency Mapping Convention
 
@@ -127,10 +180,10 @@ Milestone naming and release-tag conventions are defined in [Milestone and relea
 |---|---|---|---|
 | Repo | Claude, Codex, Copilot | Read | Use for scope confirmation before any implementation or review work. |
 | Phase | Claude, Codex, Copilot | Read | Treat as the authoritative delivery phase. Agents may recommend Phase changes, but they must not autonomously mutate Phase unless explicitly directed by a Human owner. |
-| Lane | Claude, Codex, Copilot | Read | Treat as Human-controlled scope authority. |
+| Lane | Claude, Codex, Copilot | Read | Treat as legacy scope context only unless a Human owner retains a single non-overlapping meaning. Do not use it to override `Status`, `Phase`, or `Implementation Readiness`. |
 | Project Priority | Claude, Codex, Copilot | Read | Use for ordering context; do not self-escalate Project Priority without Human input. |
 | Status | Claude, Codex, Copilot | Read/Write | Agents may write Status only for user-scoped, human-approved active work. Permitted write transitions: `In Progress`, `Review`, and `Blocked`. Agents may recommend `Ready` but must not apply it; Human owners approve all `Ready` transitions. |
-| Implementation Order | Claude, Codex, Copilot | Read | Use for within-lane sequencing context only; Implementation Order is local to a lane, not a global priority rank. Do not autonomously reorder work. |
+| Implementation Order | Claude, Codex, Copilot | Read | Use for sequencing context only; do not autonomously reorder work. |
 | Blocked By | Claude, Codex, Copilot | Read/Write | Record concrete blockers with repo-qualified issue references where possible, but keep the canonical blocking reason or link in the issue body or comments as required by [issue-lane-policy.md](../issue-lane-policy.md#lane-and-status-definitions). |
 | Release Gate | Claude, Codex, Copilot | Read | Use to understand milestone pressure, not to broaden scope. |
 | Validation Command | Codex | Read/Write | Keep aligned with repo-local validation actually run or required. |
@@ -145,9 +198,9 @@ Deferred and `Do Not Implement Yet` states must not be self-promoted by agents. 
 
 ## Triage Cadence and Stale Issue Handling
 
-Review the project at least weekly during MVP work, and more often when a hosted demo or customer-pilot milestone is active. Human owners should handle Inbox classification, milestone fit, lane assignment, and any state changes that would promote deferred work or change buyer-facing scope.
+Review the project at least weekly during MVP work, and more often when a hosted demo or customer-pilot milestone is active. Human owners should handle Inbox classification, milestone fit, status assignment, and any state changes that would promote deferred work or change buyer-facing scope.
 
-Inbox triage should confirm the repo, Phase, Lane, Project Priority, Release Gate, and whether a concrete validation command or blocker is already known. If the issue is not implementation-ready, set `Implementation Readiness` to `needs-clarification` or move the issue to `Blocked`, `Deferred`, or `Do Not Implement Yet` instead of letting agents infer scope.
+Inbox triage should confirm the repo, Phase, Project Priority, Release Gate, Workstream, and whether a concrete validation command or blocker is already known. If the issue is not implementation-ready, set `Implementation Readiness` to `needs-clarification` or move the issue to `Blocked`, `Deferred`, or `Do Not Implement Yet` instead of letting agents infer scope.
 
 Treat stale issues as review debt, not silent backlog drift. If `Last Reviewed` is older than the team cadence, re-check scope, blockers, and milestone relevance. Deferred issues re-enter active work only through the promotion path documented in [issue-lane-policy.md](../issue-lane-policy.md).
 
@@ -156,10 +209,10 @@ Treat stale issues as review debt, not silent backlog drift. If `Last Reviewed` 
 These workflows stay in the GitHub Project UI because they require human ownership, judgment, or approval.
 
 - Inbox triage
-- Lane assignment
 - Status transitions requiring human approval, including Ready, Deferred, and Do Not Implement Yet
 - Project Priority and Workstream assignment
 - Last Reviewed updates on stale issues
+- Any decision to retain or remove legacy `Lane` field usage
 
 ## Automation Boundary
 
@@ -174,22 +227,27 @@ Automation must not mutate Status, Lane, or Project Priority without human revie
 
 ## Recommended Field Posture
 
-### Project fields that are the operational source of truth
+### Keep as active Project fields
 
 - Status
-- Implementation Order
-- Lane
-- Blocked By
-- Release Gate
-- Validation Command
 - Agent
+- Implementation Readiness
+- Project Priority
+- Implementation Order
+- Blocked By
+- Repo
+- Workstream
+- Phase
+- Release Gate
+- Scope Risk
+- Validation Command
 - Last Reviewed
 - Confidence
-- Implementation Readiness
-- Scope Risk
-- Project Priority
-- Phase
-- Workstream
+
+### Stop using or remove from active planning
+
+- Agent Status: duplicates `Agent`, `Status`, and `Implementation Readiness`.
+- Lane: duplicates active/deferred workflow concepts already represented by `Status`, `Phase`, `Release Gate`, and readiness unless a single non-overlapping meaning is explicitly defined.
 
 ### Labels that classify work for routing/filtering
 
