@@ -59,6 +59,8 @@ The following values are already represented by named Project fields, and adding
 - `workstream:*`
 - `project-priority:*`
 
+Do not create duplicate label families for Project-field concepts. In particular, avoid `epic/*`, `workstream/*`, `status/*`, `agent/*`, `scope/*`, `lane/*`, `readiness/*`, `release-gate/*`, and `project-priority/*` labels unless a human owner explicitly approves a taxonomy migration. Use `type/epic` plus Project fields and issue relationships for epic routing.
+
 ## Label Families
 
 Use these label families for active planning and issue triage:
