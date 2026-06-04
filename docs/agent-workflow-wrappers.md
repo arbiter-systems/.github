@@ -4,6 +4,8 @@ Use these wrappers to keep Claude and Codex work separated, scoped, and aligned 
 
 Repo-local `AGENTS.md` governs local implementation boundaries. Shared workflow docs supplement repo-local rules; they do not expand agent authority or move repo-specific guardrails into shared docs.
 
+Use [Role-based AI engineering workflow](role-based-ai-engineering-workflow.md) for the standard planning, implementation, role-specific review, targeted fix, and final human merge gates.
+
 ## Claude: prompt-generation-only
 
 Claude must generate only a filled Codex prompt.
