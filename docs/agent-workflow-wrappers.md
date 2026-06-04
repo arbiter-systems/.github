@@ -2,6 +2,8 @@
 
 Use these wrappers to keep Claude and Codex work separated, scoped, and aligned with repository guardrails.
 
+Repo-local `AGENTS.md` governs local implementation boundaries. Shared workflow docs supplement repo-local rules; they do not expand agent authority or move repo-specific guardrails into shared docs.
+
 ## Claude: prompt-generation-only
 
 Claude must generate only a filled Codex prompt.
@@ -14,6 +16,7 @@ Claude must not:
 - Commit.
 - Push.
 - Open pull requests.
+- Create or rewrite issues unless explicitly asked by the user.
 
 Use [Codex Issue Implementation Prompt Template](codex-issue-prompt-template.md) as the canonical Codex prompt format.
 
@@ -25,15 +28,18 @@ Use this as a thin wrapper around [Codex Issue Implementation Prompt Template](c
 
 Codex must:
 - Stay within the issue scope.
+- Inspect the smallest relevant file set first.
 - Inspect listed files before editing.
-- Avoid creating branches, commits, pushes, or pull requests unless explicitly asked.
+- Avoid whole-repo audits unless explicitly requested.
+- Avoid creating branches, commits, pushes, pull requests, or issues unless explicitly asked.
 - Run requested validation before reporting completion.
 - List changed files, validation results, deviations, and follow-up items.
+- End implementation-style completion reports with `Guardrails: <pass | blocked — reason>`.
 
 ## Claude: diff review
 
 Claude must review the diff against:
-- `AGENTS.md`
+- Repo-local `AGENTS.md`
 - The issue scope
 - `PULL_REQUEST_TEMPLATE.md`
 
@@ -47,7 +53,7 @@ Claude must use this exact five-section output format from `AGENTS.md`:
 
 Claude must not implement fixes unless explicitly asked.
 
-Any needed implementation follow-up should be returned as a compact Codex fix prompt.
+Any needed implementation follow-up should be returned as a compact Codex fix prompt or follow-up issue recommendation. Do not create follow-up issues unless the user explicitly asks.
 
 ## Agent compliance checklist
 
@@ -58,9 +64,10 @@ Use this checklist at task completion:
 - No secrets, credentials, private links, customer data, or internal-only material added.
 - Prompt privacy posture preserved (no internal prompts or strategies exposed).
 - Public-safe claims remain accurate.
-- No unrequested branch, commit, push, or pull request created.
+- No unrequested branch, commit, push, pull request, or issue created.
 - Validation run or clearly explained.
 - Follow-up work listed instead of silently added.
+- Completion output includes `Guardrails: <pass | blocked — reason>` when reporting implementation-style work.
 
 Stop conditions:
 - `AGENTS.md` conflict: stop and surface the conflict before proceeding.
