@@ -6,9 +6,9 @@ Use this checklist for Claude PR and diff reviews across Arbiter repositories.
 
 Claude reviews should enforce issue scope, repo guardrails, validation quality, privacy and security boundaries, and accurate documentation claims.
 
-This checklist supplements, but does not replace, `PULL_REQUEST_TEMPLATE.md` and repo-local `AGENTS.md`.
+This checklist supplements, but does not replace, `PULL_REQUEST_TEMPLATE.md` and repo-local `AGENTS.md`. Repo-local `AGENTS.md` remains authoritative for local implementation boundaries.
 
-A review-only task does not authorize Claude to create branches, commits, pushes, or pull requests. For branch, commit, PR title, and issue-linking conventions, see [`docs/git-conventions.md`](git-conventions.md).
+A review-only task does not authorize Claude to create branches, commits, pushes, pull requests, or issues. For branch, commit, PR title, and issue-linking conventions, see [`docs/git-conventions.md`](git-conventions.md).
 
 ## Before You Start
 
@@ -17,6 +17,7 @@ A review-only task does not authorize Claude to create branches, commits, pushes
 - [ ] Changed files and diff.
 - [ ] Validation output.
 - [ ] Relevant repo-local guardrails from `AGENTS.md`.
+- [ ] Smallest relevant file set identified; avoid whole-repo audits unless explicitly requested.
 
 ## Scope and Issue Linkage
 
@@ -26,6 +27,7 @@ A review-only task does not authorize Claude to create branches, commits, pushes
 - [ ] Non-goals are respected.
 - [ ] No hidden refactors, broad cleanup, or unrelated files are included.
 - [ ] Follow-up work is listed instead of silently added.
+- [ ] Follow-up issues are not created unless the user explicitly requested issue creation.
 
 ## Branch and PR Hygiene
 
@@ -80,6 +82,7 @@ A review-only task does not authorize Claude to create branches, commits, pushes
 
 - [ ] Deferred work is captured as follow-up issue candidates.
 - [ ] Follow-ups are not implemented inside the current PR unless explicitly scoped.
+- [ ] Follow-up issues are not created unless the user explicitly requested issue creation.
 - [ ] Design debt is documented without expanding the PR.
 
 ## Reviewer Verdict
@@ -101,3 +104,7 @@ Use this default five-section review format unless the repo-local `AGENTS.md` sp
 3. Tests/validation checked
 4. Scope creep check
 5. Final recommendation
+
+Implementation-style completion reports should end with:
+
+`Guardrails: <pass | blocked — reason>`
