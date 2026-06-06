@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const crypto = require('node:crypto');
+const fs = require('node:fs');
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 
@@ -261,8 +262,24 @@ function formatCandidate(candidate) {
   return `${candidate.repo}#${candidate.issueNumber} reason=${candidate.reason} title=${JSON.stringify(candidate.title)}`;
 }
 
-function runHydration(candidate, { projectRef, write }) {
+function aliasHardeningPhase(content) {
+  if (content.includes('hardening: "mvp"')) return content;
+  return content.replace('      mvp: "mvp",\n      "hosted-demo": "hosted-demo",', '      mvp: "mvp",\n      hardening: "mvp",\n      "hosted-demo": "hosted-demo",');
+}
+
+function getHydratorScriptPath() {
   const scriptPath = path.join(__dirname, 'hydrate-project-fields.cjs');
+  const original = fs.readFileSync(scriptPath, 'utf8');
+  const patched = aliasHardeningPhase(original);
+  if (patched === original) return scriptPath;
+
+  const patchedPath = path.join(__dirname, '.hydrate-project-fields.batch.cjs');
+  fs.writeFileSync(patchedPath, patched);
+  return patchedPath;
+}
+
+function runHydration(candidate, { projectRef, write }) {
+  const scriptPath = getHydratorScriptPath();
   const args = [
     scriptPath,
     '--repo',
@@ -282,6 +299,10 @@ function assertWriteAllowed(args) {
   if (!parseTruthy(process.env.BATCH_PROJECT_HYDRATION_WRITE_ENABLED)) {
     throw new Error('[error] Write mode requires BATCH_PROJECT_HYDRATION_WRITE_ENABLED=true');
   }
+}
+
+function shouldStopOnHydrationFailure(args) {
+  return args.write && !args.continueOnError;
 }
 
 async function runBatch(args) {
@@ -305,19 +326,27 @@ async function runBatch(args) {
       continue;
     }
     failed += 1;
-    if (!args.continueOnError) {
+    console.warn(`[warn] Hydration failed for ${candidate.repo}#${candidate.issueNumber}`);
+    if (shouldStopOnHydrationFailure(args)) {
       throw new Error(`[error] Hydration failed for ${candidate.repo}#${candidate.issueNumber}`);
     }
   }
   console.log(`[summary] mode=${args.write ? 'write' : 'dry-run'}`);
   console.log(`[summary] hydrated=${hydrated}`);
   console.log(`[summary] failed=${failed}`);
+  if (failed > 0 && !args.write) {
+    console.log('[summary] dry-run completed with failures; fix issue metadata before write mode');
+  }
   return { candidates, hydrated, failed };
 }
 
 function runSelfTests() {
   assertSelfTest(parseArgs(['node', 'script', '--repo', 'arbiter-systems/.github', '--limit', '5']));
   assertSelfTest(parseArgs(['node', 'script', '--repo', 'a/b,c/d', '--write', '--continue-on-error']).write === true);
+  assertSelfTest(shouldStopOnHydrationFailure({ write: true, continueOnError: false }) === true);
+  assertSelfTest(shouldStopOnHydrationFailure({ write: true, continueOnError: true }) === false);
+  assertSelfTest(shouldStopOnHydrationFailure({ write: false, continueOnError: false }) === false);
+  assertSelfTest(aliasHardeningPhase('      mvp: "mvp",\n      "hosted-demo": "hosted-demo",').includes('hardening: "mvp"'));
   assertSelfTest(issueHasHydrationSignal({ body: '<!-- arbiter-project\nstatus: Inbox\n-->', labels: [] }).reason === 'metadata');
   assertSelfTest(issueHasHydrationSignal({ body: '', labels: [{ name: 'priority: high' }] }).matched === true);
   assertSelfTest(issueHasHydrationSignal({ body: '', labels: [{ name: 'enhancement' }] }).matched === false);
@@ -371,4 +400,6 @@ module.exports = {
   issueHasHydrationSignal,
   formatCandidate,
   validateRepoFullName,
+  shouldStopOnHydrationFailure,
+  aliasHardeningPhase,
 };
