@@ -262,15 +262,27 @@ function formatCandidate(candidate) {
   return `${candidate.repo}#${candidate.issueNumber} reason=${candidate.reason} title=${JSON.stringify(candidate.title)}`;
 }
 
-function aliasHardeningPhase(content) {
-  if (content.includes('hardening: "mvp"')) return content;
-  return content.replace('      mvp: "mvp",\n      "hosted-demo": "hosted-demo",', '      mvp: "mvp",\n      hardening: "mvp",\n      "hosted-demo": "hosted-demo",');
+function aliasLegacyMetadata(content) {
+  let patched = content;
+  if (!patched.includes('hardening: "mvp"')) {
+    patched = patched.replace(
+      '      mvp: "mvp",\n      "hosted-demo": "hosted-demo",',
+      '      mvp: "mvp",\n      hardening: "mvp",\n      "hosted-demo": "hosted-demo",',
+    );
+  }
+  if (!patched.includes('blocked: "not-ready"')) {
+    patched = patched.replace(
+      '      "needs-clarification": "needs-clarification",\n      ready: "ready",',
+      '      "needs-clarification": "needs-clarification",\n      blocked: "not-ready",\n      ready: "ready",',
+    );
+  }
+  return patched;
 }
 
 function getHydratorScriptPath() {
   const scriptPath = path.join(__dirname, 'hydrate-project-fields.cjs');
   const original = fs.readFileSync(scriptPath, 'utf8');
-  const patched = aliasHardeningPhase(original);
+  const patched = aliasLegacyMetadata(original);
   if (patched === original) return scriptPath;
 
   const patchedPath = path.join(__dirname, '.hydrate-project-fields.batch.cjs');
@@ -346,7 +358,8 @@ function runSelfTests() {
   assertSelfTest(shouldStopOnHydrationFailure({ write: true, continueOnError: false }) === true);
   assertSelfTest(shouldStopOnHydrationFailure({ write: true, continueOnError: true }) === false);
   assertSelfTest(shouldStopOnHydrationFailure({ write: false, continueOnError: false }) === false);
-  assertSelfTest(aliasHardeningPhase('      mvp: "mvp",\n      "hosted-demo": "hosted-demo",').includes('hardening: "mvp"'));
+  assertSelfTest(aliasLegacyMetadata('      mvp: "mvp",\n      "hosted-demo": "hosted-demo",').includes('hardening: "mvp"'));
+  assertSelfTest(aliasLegacyMetadata('      "needs-clarification": "needs-clarification",\n      ready: "ready",').includes('blocked: "not-ready"'));
   assertSelfTest(issueHasHydrationSignal({ body: '<!-- arbiter-project\nstatus: Inbox\n-->', labels: [] }).reason === 'metadata');
   assertSelfTest(issueHasHydrationSignal({ body: '', labels: [{ name: 'priority: high' }] }).matched === true);
   assertSelfTest(issueHasHydrationSignal({ body: '', labels: [{ name: 'enhancement' }] }).matched === false);
@@ -401,5 +414,5 @@ module.exports = {
   formatCandidate,
   validateRepoFullName,
   shouldStopOnHydrationFailure,
-  aliasHardeningPhase,
+  aliasLegacyMetadata,
 };
