@@ -1,21 +1,16 @@
 name: Add to Arbiter Project
 
 on:
-  issues:
-    types: [opened, reopened, transferred]
-  pull_request:
-    types: [opened, reopened, ready_for_review]
+  workflow_dispatch:
 
-permissions:
-  contents: read
-  issues: read
-  pull-requests: read
+concurrency:
+  group: add-to-arbiter-project
+  cancel-in-progress: true
 
 jobs:
-  add-to-project:
+  disabled:
     runs-on: ubuntu-latest
+    timeout-minutes: 1
     steps:
-      - uses: actions/add-to-project@v1.0.2
-        with:
-          project-url: https://github.com/orgs/arbiter-systems/projects/2
-          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+      - name: Disabled
+        run: echo "Add to Arbiter Project is disabled to prevent issue and PR event automation from consuming GitHub Actions minutes."
