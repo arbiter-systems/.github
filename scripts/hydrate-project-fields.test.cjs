@@ -22,7 +22,6 @@ function runSelfTests() {
       "project: arbiter-systems/2",
       "repo: arbiter-systems/.github",
       "status: Inbox",
-      "lane: active-mvp",
       "project_priority: Low",
       "phase: mvp",
       "release_gate: local-mvp",
@@ -42,7 +41,6 @@ function runSelfTests() {
   assert.equal(metadata.values.repo, "arbiter-systems/.github");
   assert.equal(metadata.unknownKeys.length, 0);
   assert.equal(metadata.values.status, "Inbox");
-  assert.equal(metadata.values.lane, "active-mvp");
   assert.equal(metadata.values.project_priority, "Low");
   assert.equal(metadata.values.phase, "mvp");
   assert.equal(metadata.values.release_gate, "local-mvp");
@@ -57,7 +55,7 @@ function runSelfTests() {
   assert.equal(metadata.explicitKeys.has("blocked_by"), false);
   assert.equal(metadata.explicitKeys.has("project_priority"), true);
 
-  metadata = parseMetadataBlock("<!-- arbiter-project\nstatus Inbox\nlane: active-mvp\n-->");
+  metadata = parseMetadataBlock("<!-- arbiter-project\nstatus Inbox\nproject_priority: High\n-->");
   assert.equal(metadata.found, true);
   assert.equal(metadata.warnings.length, 1);
 
@@ -65,8 +63,10 @@ function runSelfTests() {
   assert.equal(metadata.unknownKeys.includes("priority"), true);
   assert.equal(metadata.values.project_priority, undefined);
 
-  metadata = parseMetadataBlock("<!-- arbiter-project\nunknown_field: value\n-->");
-  assert.equal(metadata.unknownKeys.includes("unknown_field"), true);
+  metadata = parseMetadataBlock("<!-- arbiter-project\nlane: active-mvp\n-->");
+  assert.equal(metadata.unknownKeys.includes("lane"), true);
+  assert.equal(metadata.values.lane, undefined);
+
   metadata = parseMetadataBlock("<!-- arbiter-project\narea: ci\n-->");
   assert.equal(metadata.unknownKeys.includes("area"), true);
 
@@ -74,12 +74,9 @@ function runSelfTests() {
   assert.equal(metadata.explicitKeys.has("phase"), false);
 
   let labels = mapLabelsToFieldHints(["active-mvp"]);
-  assert.equal(labels.lane, "active-mvp");
   assert.equal(labels.priority, null);
   assert.equal(labels.status, null);
-
-  labels = mapLabelsToFieldHints(["lane: deferred"]);
-  assert.equal(labels.lane, "deferred");
+  assert.equal(labels.lane, undefined);
 
   labels = mapLabelsToFieldHints(["blocked"]);
   assert.equal(labels.status, "Blocked");
@@ -102,12 +99,11 @@ function runSelfTests() {
   assert.equal(labels.priority, "Low");
 
   labels = mapLabelsToFieldHints([]);
-  assert.equal(labels.lane, null);
   assert.equal(labels.priority, null);
   assert.equal(labels.status, null);
 
-  labels = mapLabelsToFieldHints(["active-mvp", "lane: deferred"]);
-  assert.equal(labels.lane, null);
+  labels = mapLabelsToFieldHints(["priority: high", "priority: low"]);
+  assert.equal(labels.priority, null);
   assert.equal(labels.warnings.length > 0, true);
 
   assert.deepEqual(parseProjectRef("arbiter-systems/2"), { org: "arbiter-systems", number: 2 });
@@ -150,14 +146,7 @@ function runSelfTests() {
       options: [
         { id: "o-inbox", name: "Inbox" },
         { id: "o-triage", name: "Triage" },
-      ],
-    },
-    {
-      id: "f-lane",
-      name: "Lane",
-      options: [
-        { id: "o-active", name: "active-mvp" },
-        { id: "o-deferred", name: "deferred" },
+        { id: "o-blocked", name: "Blocked" },
       ],
     },
     {
@@ -166,14 +155,13 @@ function runSelfTests() {
       options: [
         { id: "o-high", name: "High" },
         { id: "o-medium", name: "Medium" },
+        { id: "o-low", name: "Low" },
       ],
     },
     {
       id: "f-phase",
       name: "Phase",
-      options: [
-        { id: "o-mvp", name: "mvp" },
-      ],
+      options: [{ id: "o-mvp", name: "mvp" }],
     },
     {
       id: "f-validation",
@@ -202,39 +190,33 @@ function runSelfTests() {
 
   let plan = planHydration(
     metadataMissing,
-    { lane: "active-mvp", priority: "High", status: "Ready", warnings: [] },
+    { priority: "High", status: "Ready", warnings: [] },
     new Map([
       ["status", { type: "single-select", value: "Triage" }],
-      ["lane", { type: "single-select", value: "deferred" }],
       ["project priority", { type: "single-select", value: "Medium" }],
     ]),
     fields,
   );
-  assert.equal(plan.operations.some((op) => op.key === "lane"), false);
   assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
   assert.equal(plan.operations.some((op) => op.key === "status"), false);
   assert.equal(plan.errors.length, 0);
 
-  plan = planHydration(metadataMissing, { lane: null, priority: null, status: null, warnings: [] }, new Map(), fields);
+  plan = planHydration(metadataMissing, { priority: null, status: null, warnings: [] }, new Map(), fields);
   assert.equal(plan.operations.some((op) => op.key === "status" && op.value === "Inbox" && op.source === "default"), true);
   assert.equal(plan.errors.length, 0);
 
   plan = planHydration(
     {
       found: true,
-      values: { lane: "active-mvp", project_priority: "High", workstream: "GitHub Project Management" },
-      explicitKeys: new Set(["lane", "project_priority", "workstream"]),
+      values: { project_priority: "High", workstream: "GitHub Project Management" },
+      explicitKeys: new Set(["project_priority", "workstream"]),
       warnings: [],
       unknownKeys: [],
     },
-    { lane: null, priority: null, status: null, warnings: [] },
-    new Map([
-      ["lane", { type: "single-select", value: "deferred" }],
-      ["project priority", { type: "single-select", value: "Medium" }],
-    ]),
+    { priority: null, status: null, warnings: [] },
+    new Map([["project priority", { type: "single-select", value: "Medium" }]]),
     fields,
   );
-  assert.equal(plan.operations.some((op) => op.key === "lane" && op.source === "metadata"), true);
   assert.equal(plan.operations.some((op) => op.key === "project_priority" && op.source === "metadata"), true);
   assert.equal(
     plan.operations.some(
@@ -251,32 +233,12 @@ function runSelfTests() {
   plan = planHydration(
     {
       found: true,
-      values: { workstream: "MVP Execution" },
-      explicitKeys: new Set(["workstream"]),
-      warnings: [],
-      unknownKeys: [],
-    },
-    { lane: null, priority: null, status: null, warnings: [] },
-    new Map(),
-    fields,
-  );
-  assert.equal(
-    plan.operations.some(
-      (op) => op.key === "workstream" && op.value === "MVP Execution" && op.optionId === "o-mvp-execution",
-    ),
-    true,
-  );
-  assert.equal(plan.errors.length, 0);
-
-  plan = planHydration(
-    {
-      found: true,
       values: { workstream: "security-privacy" },
       explicitKeys: new Set(["workstream"]),
       warnings: [],
       unknownKeys: [],
     },
-    { lane: null, priority: null, status: null, warnings: [] },
+    { priority: null, status: null, warnings: [] },
     new Map(),
     fields,
   );
@@ -299,7 +261,7 @@ function runSelfTests() {
       warnings: [],
       unknownKeys: [],
     },
-    { lane: null, priority: null, status: null, warnings: [] },
+    { priority: null, status: null, warnings: [] },
     new Map(),
     fields.filter((field) => field.name !== "Phase"),
   );
@@ -310,7 +272,7 @@ function runSelfTests() {
   );
 
   assert.throws(
-    () => validateRequiredProjectFields(fields.filter((field) => field.name !== "Lane")),
+    () => validateRequiredProjectFields(fields.filter((field) => field.name !== "Project Priority")),
     /Missing required project fields/,
   );
 
@@ -322,7 +284,7 @@ function runSelfTests() {
       warnings: [],
       unknownKeys: [],
     },
-    { lane: null, priority: null, status: null, warnings: [] },
+    { priority: null, status: null, warnings: [] },
     new Map(),
     fields,
   );
@@ -335,80 +297,6 @@ function runSelfTests() {
   );
   assert.equal(plan.errors.some((error) => error.includes("Configured taxonomy")), true);
   assert.equal(plan.errors.some((error) => error.includes("Live project options")), true);
-
-  plan = planHydration(
-    {
-      found: true,
-      values: { project_priority: "P1" },
-      explicitKeys: new Set(["project_priority"]),
-      warnings: [],
-      unknownKeys: [],
-    },
-    { lane: null, priority: null, status: null, warnings: [] },
-    new Map(),
-    fields,
-  );
-  assert.equal(plan.operations.some((op) => op.key === "project_priority"), false);
-  assert.equal(
-    plan.errors.some((error) =>
-      error.includes("Unknown single-select option 'P1' for field 'Project Priority'."),
-    ),
-    true,
-  );
-  assert.equal(plan.errors.some((error) => error.includes("Configured taxonomy")), true);
-  assert.equal(plan.errors.some((error) => error.includes("Live project options")), true);
-
-  plan = planHydration(
-    {
-      found: true,
-      values: { workstream: "GitHub Project Management" },
-      explicitKeys: new Set(["workstream"]),
-      warnings: [],
-      unknownKeys: [],
-    },
-    { lane: null, priority: null, status: null, warnings: [] },
-    new Map(),
-    fields.filter((field) => field.name !== "Workstream"),
-  );
-  assert.equal(plan.operations.some((op) => op.key === "workstream"), false);
-  assert.equal(
-    plan.warnings.some((warning) => warning.includes("Optional project field for 'workstream'")),
-    true,
-  );
-
-  plan = planHydration(
-    {
-      found: true,
-      values: { workstream: "repo-operations" },
-      explicitKeys: new Set(["workstream"]),
-      warnings: [],
-      unknownKeys: [],
-    },
-    { lane: null, priority: null, status: null, warnings: [] },
-    new Map(),
-    fields,
-  );
-  assert.equal(plan.operations.some((op) => op.key === "workstream"), false);
-  assert.equal(
-    plan.errors.some((error) => error.includes("Unknown single-select option 'repo-operations' for field 'Workstream'.")),
-    true,
-  );
-  assert.equal(
-    plan.errors.some((error) =>
-      error.includes(
-        "Configured taxonomy: GitHub Project Management, MVP Execution, Security & Compliance, Documentation & Site, Infrastructure & Ops",
-      ),
-    ),
-    true,
-  );
-  assert.equal(
-    plan.errors.some((error) =>
-      error.includes(
-        "Live project options: GitHub Project Management, MVP Execution, Security & Compliance, Documentation & Site, Infrastructure & Ops",
-      ),
-    ),
-    true,
-  );
 
   const missingOptionFields = fields.map((field) =>
     field.name === "Project Priority"
@@ -423,7 +311,7 @@ function runSelfTests() {
       warnings: [],
       unknownKeys: [],
     },
-    { lane: null, priority: null, status: null, warnings: [] },
+    { priority: null, status: null, warnings: [] },
     new Map(),
     missingOptionFields,
   );
@@ -434,12 +322,9 @@ function runSelfTests() {
     ),
     true,
   );
-  assert.equal(plan.errors.some((error) => error.includes("Live project options: Medium")), true);
 
   const emptyOptionFields = fields.map((field) =>
-    field.name === "Project Priority"
-      ? { ...field, options: [] }
-      : field,
+    field.name === "Project Priority" ? { ...field, options: [] } : field,
   );
   plan = planHydration(
     {
@@ -449,7 +334,7 @@ function runSelfTests() {
       warnings: [],
       unknownKeys: [],
     },
-    { lane: null, priority: null, status: null, warnings: [] },
+    { priority: null, status: null, warnings: [] },
     new Map(),
     emptyOptionFields,
   );
