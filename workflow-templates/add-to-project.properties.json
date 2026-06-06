@@ -1,7 +1,0 @@
-{
-  "name": "Add to Arbiter Project",
-  "description": "Adds new and reopened issues and pull requests to the Arbiter organization GitHub Project.",
-  "iconName": "project",
-  "categories": ["Automation"]
-}
-
