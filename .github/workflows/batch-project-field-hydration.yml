@@ -1,0 +1,84 @@
+name: Batch Project Field Hydration
+
+on:
+  workflow_dispatch:
+    inputs:
+      repos:
+        description: "Comma-separated owner/repo list to scan"
+        required: true
+        type: string
+      limit:
+        description: "Maximum candidate issues to process"
+        required: true
+        default: "10"
+        type: string
+      since:
+        description: "Optional ISO timestamp for updated-since filtering"
+        required: false
+        type: string
+      write:
+        description: "Apply writes after previewing candidates"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      continue_on_error:
+        description: "Continue after a candidate hydration failure"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: batch-project-field-hydration
+  cancel-in-progress: true
+
+jobs:
+  batch-project-field-hydration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Self-test hydration scripts
+        run: |
+          node scripts/hydrate-project-fields.cjs --self-test
+          node scripts/batch-project-field-hydration.cjs --self-test
+
+      - name: Batch project field hydration
+        env:
+          PROJECT_AUTOMATION_APP_ID: ${{ vars.PROJECT_AUTOMATION_APP_ID }}
+          PROJECT_AUTOMATION_PRIVATE_KEY: ${{ secrets.PROJECT_AUTOMATION_PRIVATE_KEY }}
+          BATCH_PROJECT_HYDRATION_WRITE_ENABLED: ${{ vars.BATCH_PROJECT_HYDRATION_WRITE_ENABLED }}
+        run: |
+          args=(
+            --repo "${{ inputs.repos }}"
+            --limit "${{ inputs.limit }}"
+            --project "${{ vars.PROJECT_AUTOMATION_PROJECT || 'arbiter-systems/2' }}"
+          )
+
+          if [ -n "${{ inputs.since }}" ]; then
+            args+=(--since "${{ inputs.since }}")
+          fi
+
+          if [ "${{ inputs.write }}" = "true" ]; then
+            args+=(--write)
+          fi
+
+          if [ "${{ inputs.continue_on_error }}" = "true" ]; then
+            args+=(--continue-on-error)
+          fi
+
+          node scripts/batch-project-field-hydration.cjs "${args[@]}"
