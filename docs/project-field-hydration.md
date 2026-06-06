@@ -71,7 +71,6 @@ The script reads an optional metadata block from the issue body:
 <!-- arbiter-project
 project: arbiter-systems/2
 status: Inbox
-lane: active-mvp
 project_priority: High
 phase: mvp
 release_gate: local-mvp
@@ -92,7 +91,6 @@ Rules:
 - Supported keys:
   - `repo`
   - `status`
-  - `lane`
   - `project_priority`
   - `phase`
   - `release_gate`
@@ -108,11 +106,11 @@ Rules:
 - Unknown metadata keys are ignored with warnings.
 - Unsupported/deprecated key: `priority` is ignored; use `project_priority`.
 - Unsupported/deprecated key: `area` is ignored.
+- Unsupported key: `lane` is ignored. Set Lane manually in the Project when needed.
 
 Allowed metadata values:
 
 - `status`: `Inbox`, `Triage`, `Ready`, `In Progress`, `Review`, `Blocked`, `Done`, `Deferred`, `Do Not Implement Yet`
-- `lane`: `active-mvp`, `deferred`
 - `project_priority`: `High`, `Medium`, `Low`
 - `phase`: `foundation`, `mvp`, `hosted-demo`, `customer-pilot`, `post-mvp`
 - `release_gate`: `none`, `local-mvp`, `hosted-demo`, `customer-pilot`, `post-mvp`
@@ -130,22 +128,21 @@ Do not use lowercase label/taxonomy values such as `repo-operations`, `console`,
 
 If a field is not explicitly supplied in metadata, the script can infer:
 
-- `active-mvp` -> `Lane=active-mvp`
-- `lane: deferred` -> `Lane=deferred`
 - `blocked` or `status: blocked` -> `Status=Blocked`
 - `triage` or `status: triage` -> `Status=Triage`
 - `priority: high` -> `Project Priority=High`
 - `priority: medium` -> `Project Priority=Medium`
 - `priority: low` -> `Project Priority=Low`
 
-If multiple conflicting lane, status, or priority labels are present, inference is skipped and a warning is logged.
+The script does not infer or hydrate Lane from labels. Labels such as `active-mvp` and `lane: deferred` are not Project Lane hydration signals.
+
+If multiple conflicting status or priority labels are present, inference is skipped and a warning is logged.
 
 `Ready` is human-approved and is not inferred from labels by this workflow.
 
 ## Defaults
 
 - `Status=Inbox` when Status is currently empty and metadata does not explicitly set `status`.
-- `Lane` remains unset unless metadata or label mapping provides a value.
 - `Project Priority` remains unset unless metadata or label mapping provides a value.
 
 ## Mutation Rules
@@ -156,7 +153,7 @@ If multiple conflicting lane, status, or priority labels are present, inference 
 - Does not overwrite existing field values from defaults or label inference.
 - Metadata values are treated as explicit and may overwrite existing values for those fields.
 - Missing optional Project fields are logged as warnings and skipped.
-- Missing required Project fields fail the run (`Status`, `Lane`, `Project Priority`).
+- Missing required Project fields fail the run (`Status`, `Project Priority`).
 - Unknown single-select metadata values are logged as warnings and skipped.
 - `--dry-run` performs no mutations.
 
