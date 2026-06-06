@@ -270,16 +270,34 @@ function aliasLegacyMetadata(content) {
       '      mvp: "mvp",\n      hardening: "mvp",\n      "hosted-demo": "hosted-demo",',
     );
   }
+  if (!patched.includes('"tests-pass": "local-mvp"')) {
+    patched = patched.replace(
+      '      "local-mvp": "local-mvp",\n      "hosted-demo": "hosted-demo",',
+      '      "local-mvp": "local-mvp",\n      "tests-pass": "local-mvp",\n      "hosted-demo": "hosted-demo",',
+    );
+  }
   if (!patched.includes('blocked: "not-ready"')) {
     patched = patched.replace(
       '      "needs-clarification": "needs-clarification",\n      ready: "ready",',
-      '      "needs-clarification": "needs-clarification",\n      blocked: "not-ready",\n      deferred: "not-ready",\n      ready: "ready",',
+      '      "needs-clarification": "needs-clarification",\n      blocked: "not-ready",\n      backlog: "not-ready",\n      deferred: "not-ready",\n      "epic-only": "not-ready",\n      "needs-review": "needs-clarification",\n      "ready-after-core-receipt-and-scenario-fixtures": "needs-clarification",\n      ready: "ready",',
     );
-  } else if (!patched.includes('deferred: "not-ready"')) {
-    patched = patched.replace(
-      '      blocked: "not-ready",\n      ready: "ready",',
-      '      blocked: "not-ready",\n      deferred: "not-ready",\n      ready: "ready",',
-    );
+  } else {
+    const readinessAliases = [
+      ['backlog: "not-ready"', '      blocked: "not-ready",\n', '      blocked: "not-ready",\n      backlog: "not-ready",\n'],
+      ['deferred: "not-ready"', '      blocked: "not-ready",\n', '      blocked: "not-ready",\n      deferred: "not-ready",\n'],
+      ['"epic-only": "not-ready"', '      blocked: "not-ready",\n', '      blocked: "not-ready",\n      "epic-only": "not-ready",\n'],
+      ['"needs-review": "needs-clarification"', '      "needs-clarification": "needs-clarification",\n', '      "needs-clarification": "needs-clarification",\n      "needs-review": "needs-clarification",\n'],
+      [
+        '"ready-after-core-receipt-and-scenario-fixtures": "needs-clarification"',
+        '      "needs-clarification": "needs-clarification",\n',
+        '      "needs-clarification": "needs-clarification",\n      "ready-after-core-receipt-and-scenario-fixtures": "needs-clarification",\n',
+      ],
+    ];
+    for (const [needle, target, replacement] of readinessAliases) {
+      if (!patched.includes(needle)) {
+        patched = patched.replace(target, replacement);
+      }
+    }
   }
   return patched;
 }
@@ -364,8 +382,13 @@ function runSelfTests() {
   assertSelfTest(shouldStopOnHydrationFailure({ write: true, continueOnError: true }) === false);
   assertSelfTest(shouldStopOnHydrationFailure({ write: false, continueOnError: false }) === false);
   assertSelfTest(aliasLegacyMetadata('      mvp: "mvp",\n      "hosted-demo": "hosted-demo",').includes('hardening: "mvp"'));
+  assertSelfTest(aliasLegacyMetadata('      "local-mvp": "local-mvp",\n      "hosted-demo": "hosted-demo",').includes('"tests-pass": "local-mvp"'));
   assertSelfTest(aliasLegacyMetadata('      "needs-clarification": "needs-clarification",\n      ready: "ready",').includes('blocked: "not-ready"'));
+  assertSelfTest(aliasLegacyMetadata('      "needs-clarification": "needs-clarification",\n      ready: "ready",').includes('backlog: "not-ready"'));
   assertSelfTest(aliasLegacyMetadata('      "needs-clarification": "needs-clarification",\n      ready: "ready",').includes('deferred: "not-ready"'));
+  assertSelfTest(aliasLegacyMetadata('      "needs-clarification": "needs-clarification",\n      ready: "ready",').includes('"epic-only": "not-ready"'));
+  assertSelfTest(aliasLegacyMetadata('      "needs-clarification": "needs-clarification",\n      ready: "ready",').includes('"needs-review": "needs-clarification"'));
+  assertSelfTest(aliasLegacyMetadata('      "needs-clarification": "needs-clarification",\n      ready: "ready",').includes('"ready-after-core-receipt-and-scenario-fixtures": "needs-clarification"'));
   assertSelfTest(issueHasHydrationSignal({ body: '<!-- arbiter-project\nstatus: Inbox\n-->', labels: [] }).reason === 'metadata');
   assertSelfTest(issueHasHydrationSignal({ body: '', labels: [{ name: 'priority: high' }] }).matched === true);
   assertSelfTest(issueHasHydrationSignal({ body: '', labels: [{ name: 'enhancement' }] }).matched === false);
