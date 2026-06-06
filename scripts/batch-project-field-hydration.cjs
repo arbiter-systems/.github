@@ -284,6 +284,10 @@ function assertWriteAllowed(args) {
   }
 }
 
+function shouldStopOnHydrationFailure(args) {
+  return args.write && !args.continueOnError;
+}
+
 async function runBatch(args) {
   assertWriteAllowed(args);
   const candidates = await discoverCandidates(args);
@@ -305,19 +309,26 @@ async function runBatch(args) {
       continue;
     }
     failed += 1;
-    if (!args.continueOnError) {
+    console.warn(`[warn] Hydration failed for ${candidate.repo}#${candidate.issueNumber}`);
+    if (shouldStopOnHydrationFailure(args)) {
       throw new Error(`[error] Hydration failed for ${candidate.repo}#${candidate.issueNumber}`);
     }
   }
   console.log(`[summary] mode=${args.write ? 'write' : 'dry-run'}`);
   console.log(`[summary] hydrated=${hydrated}`);
   console.log(`[summary] failed=${failed}`);
+  if (failed > 0 && !args.write) {
+    console.log('[summary] dry-run completed with failures; fix issue metadata before write mode');
+  }
   return { candidates, hydrated, failed };
 }
 
 function runSelfTests() {
   assertSelfTest(parseArgs(['node', 'script', '--repo', 'arbiter-systems/.github', '--limit', '5']));
   assertSelfTest(parseArgs(['node', 'script', '--repo', 'a/b,c/d', '--write', '--continue-on-error']).write === true);
+  assertSelfTest(shouldStopOnHydrationFailure({ write: true, continueOnError: false }) === true);
+  assertSelfTest(shouldStopOnHydrationFailure({ write: true, continueOnError: true }) === false);
+  assertSelfTest(shouldStopOnHydrationFailure({ write: false, continueOnError: false }) === false);
   assertSelfTest(issueHasHydrationSignal({ body: '<!-- arbiter-project\nstatus: Inbox\n-->', labels: [] }).reason === 'metadata');
   assertSelfTest(issueHasHydrationSignal({ body: '', labels: [{ name: 'priority: high' }] }).matched === true);
   assertSelfTest(issueHasHydrationSignal({ body: '', labels: [{ name: 'enhancement' }] }).matched === false);
@@ -371,4 +382,5 @@ module.exports = {
   issueHasHydrationSignal,
   formatCandidate,
   validateRepoFullName,
+  shouldStopOnHydrationFailure,
 };
