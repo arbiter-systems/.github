@@ -2,53 +2,15 @@ name: Sync Blocked By
 
 on:
   workflow_dispatch:
-    inputs:
-      dry_run:
-        description: "Run in dry-run mode"
-        type: choice
-        required: true
-        default: "true"
-        options:
-          - "true"
-          - "false"
-      target_repo:
-        description: "Optional repo slug filter (e.g., control-plane-api or arbiter-systems/control-plane-api)"
-        type: string
-        required: false
-      update_status_blocked:
-        description: "Allow Status -> Blocked updates"
-        type: choice
-        required: true
-        default: "false"
-        options:
-          - "true"
-          - "false"
-  schedule:
-    - cron: "0 4 * * *"
 
 concurrency:
   group: sync-blocked-by
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  sync-blocked-by:
+  disabled:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-    env:
-      GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
-      GH_ORG: ${{ github.repository_owner }}
-      GH_PROJECT_NUM: ${{ vars.ARBITER_PROJECT_NUM }}
-      DRY_RUN: ${{ inputs.dry_run || 'true' }}
-      TARGET_REPO: ${{ inputs.target_repo || '' }}
-      UPDATE_STATUS_BLOCKED: ${{ inputs.update_status_blocked || 'false' }}
+    timeout-minutes: 1
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Self-test
-        run: node scripts/sync-blocked-by.mjs --self-test
-      - name: Sync Project Blocked By
-        run: node scripts/sync-blocked-by.mjs
+      - name: Disabled
+        run: echo "Sync Blocked By is disabled because the script is not trusted and should not consume scheduled GitHub Actions minutes."
