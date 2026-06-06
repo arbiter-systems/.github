@@ -52,10 +52,8 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Self-test hydration scripts
-        run: |
-          node scripts/hydrate-project-fields.cjs --self-test
-          node scripts/batch-project-field-hydration.cjs --self-test
+      - name: Self-test batch hydrator
+        run: node scripts/batch-project-field-hydration.cjs --self-test
 
       - name: Batch project field hydration
         env:
