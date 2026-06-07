@@ -1,104 +1,27 @@
 # AGENTS.md
 
-## Repository Role
+## Repository role
 
-This public repository contains Arbiter Systems organization-level GitHub metadata, including the public organization profile and shared community files when needed.
+This public repository contains Arbiter Systems organization-level GitHub metadata, public profile content, shared templates, and public-safe policy files.
 
-Keep all content public-safe.
+## Public-safe boundary
 
-## Owns
+Treat all content in this repository as public, indexed, and permanent.
 
-- Public organization profile content under `profile/`
-- Shared public-facing GitHub metadata
-- Issue and pull request templates when explicitly scoped
-- Public-safe contribution or security policy files when explicitly scoped
+Do not publish:
 
-## Does Not Own
+- secrets, credentials, tokens, private links, account identifiers, or customer data
+- internal roadmap, strategy, competitive analysis, governance details, or private architecture planning
+- service contracts, runtime topology, local validation logs, implementation sequencing, or private issue references
+- security findings, vulnerability baselines, audit worksheets, or known-gap reports
 
-- Product source code
-- Control Plane API implementation
-- AI Execution Service implementation
-- Arbiter Console implementation
-- Public website implementation
-- Internal roadmap, moat thesis, competitive strategy, or private architecture planning
-- Customer data, secrets, legal records, or internal admin material
+## Change guidance
 
-## Non-Negotiables
-
-- Do not include secrets, credentials, API keys, private links, customer data, or internal admin material.
-- Do not publish private roadmap, moat, execution intelligence, semantic rollback, replay/simulation, governance strategy, or competitive analysis details.
-- Keep public claims accurate, concise, and supportable.
-- Do not add product code or runtime infrastructure here.
-- Keep each change scoped to one issue.
-- Do not modify unrelated files unless required.
-
-## Documentation Style
-
-- Keep copy clear, public-facing, and high-level.
-- Prefer concise markdown.
-- Avoid implementation promises that are not already true or explicitly approved.
-- Keep organization profile content aligned with Arbiter Systems as AI infrastructure for controlled, observable, reliable model execution.
-- Use [Public MVP Feature Language](docs/product/public-mvp-feature-language.md) for product-facing public docs, demo copy, issue summaries, and public-safe overview language.
-- Keep code, architecture, API contract, configuration, and implementation docs free to use engineering primitive names when they are clearer and more precise.
-- Do not let product-facing names expand runtime scope, Project fields, labels, epics, or acceptance criteria by themselves.
-
-## Usage and Review Discipline
-
-Keep responses concise and task-scoped.
-
-## Capability Model
-
-See [agent-capability-model](docs/operations/agent-capability-model.md) for the full capability policy.
-
-## Controlled Files
-
-See [controlled-file-policy](docs/operations/controlled-file-policy.md) for controlled path categories and review requirements.
-
-Current tool roles:
-- Codex: implementation, tests, build/test iteration, PR-ready changes.
-- Claude: architecture, issue refinement, scope control, diff review.
-- Copilot: inline autocomplete and small local edits.
-
-Default behavior:
-- Inspect only files relevant to the current issue, branch, or diff.
-- Do not perform whole-repo audits unless explicitly requested.
-- Do not re-architect existing systems unless the issue requires it.
-- Prefer small, issue-focused changes over broad cleanup.
-- Avoid repeating repository context unless it directly affects the change.
-
-Review format:
-1. Merge blockers
-2. Non-blocking issues
-3. Tests/validation checked
-4. Scope creep check
-5. Final recommendation
-
-Review depth:
-- Docs-only changes: light review.
-- Test-only changes: light review.
-- Small implementation changes: standard review.
-- Security, policy, routing, tenant isolation, execution tracing, provider fallback, quota, or public API changes: full review.
-
-Implementation rules:
-- Stay within the GitHub issue acceptance criteria.
-- Do not introduce persistence, billing, dashboards, replay, marketplaces, advanced policy DSLs, multi-region routing, or background workers unless explicitly requested.
-- Preserve existing public contracts unless the issue requires a contract change.
-- Add or update tests when behavior changes.
-- Run the repo's documented validation commands before reporting completion.
+- Keep changes small, public-facing, and issue-scoped.
+- Use concise Markdown.
+- Keep public claims accurate, supportable, and aligned with implemented behavior.
+- Do not add product source code, runtime infrastructure, service contracts, private planning records, or internal operating runbooks here.
 
 ## Validation
 
-For documentation-only changes, inspect rendered markdown where practical.
-
-Use [linting-and-validation-policy](docs/operations/linting-and-validation-policy.md) for the organization baseline on blocking versus advisory checks.
-
-Until dedicated `.github` validation tooling is implemented, use manual markdown review and controlled-file review disclosure for this repository. If templates or automation files are added later, validate them with the repository-appropriate tooling.
-
-## Git and Completion
-
-- Work only on the issue branch unless instructed otherwise.
-- Check `git status` before and after changes.
-- Keep commits focused.
-- Do not overwrite unrelated local changes.
-
-Before reporting completion, include changed files, content changed, validation performed, deferred work, known limitations, and confirmation that no unrelated files changed.
+For documentation-only changes, inspect Markdown rendering where practical and confirm the changed content remains public-safe.
