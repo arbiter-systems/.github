@@ -25,5 +25,11 @@ For public documentation changes, check:
 2. Claims are accurate and supportable.
 3. Private implementation details are omitted.
 4. The change is limited to the requested scope.
+5. Validation is documented, or the reason validation was not run is clear.
+6. No unrelated formatting churn, refactors, or drive-by cleanup are mixed in.
+
+When a best-practice rule conflicts with issue scope, preserve issue scope and document the tradeoff instead of expanding the implementation.
+
+Use the pull request template checklist for scope, validation, and public/private boundary review.
 
 Do not merge pull requests unless explicitly instructed by a human owner.
