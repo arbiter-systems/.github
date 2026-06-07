@@ -2,7 +2,9 @@
 
 ## Purpose
 
-This public-safe guide defines how shared Arbiter documentation may reference MVP feature language without exposing private product-management, roadmap, strategy, customer, or implementation-planning details.
+This public-safe guide is the authoritative public source for Arbiter MVP feature names and claim guardrails.
+
+It defines how shared Arbiter documentation may reference MVP feature language without exposing private product-management, roadmap, strategy, customer, or implementation-planning details.
 
 Private product taxonomy and PRD framing belong in private planning repositories. Public `.github` docs may use only the sanitized names and claim guardrails below.
 
@@ -54,8 +56,7 @@ Allowed public-safe wording examples:
 
 ## Related Documents
 
+- [Product naming guidance](../product-naming.md)
 - [Public content policy](../public-content-policy.md)
 - [Public-safe demo data policy](../security/public-safe-demo-data-policy.md)
-- [GitHub Project operating model](../operations/github-project-operating-model.md)
-- [Issue lane policy](../issue-lane-policy.md)
-- [Claude review checklist](../claude-review-checklist.md)
+- [Public and private documentation boundary](../public-private-documentation-boundary.md)
