@@ -57,8 +57,8 @@ Hidden metadata values must match GitHub Project field option values, not label 
 Validation steps:
 
 1. Merge the reusable workflow in `.github`.
-2. Add the caller workflow to a product repo.
-3. Edit or open an issue in that product repo with a valid metadata block.
+2. Add the caller workflow to a participating repo.
+3. Edit or open an issue in that repo with a valid metadata block.
 4. Confirm the repo-local workflow runs.
 5. Confirm the issue is added to `arbiter-systems/2` if missing.
 6. Confirm Project fields hydrate correctly.
@@ -119,6 +119,8 @@ Allowed metadata values:
 - `confidence`: `high`, `medium`, `low`
 - `agent`: `none`, `Codex`, `Claude`, `Copilot`, `mixed`
 - `workstream`: `GitHub Project Management`, `MVP Execution`, `Security & Compliance`, `Documentation & Site`, `Infrastructure & Ops`
+
+`repo` metadata values must match the live GitHub Project `Repo` single-select options. When a new repository is added to organization project scope, add the live Project option before relying on `repo:` metadata for that repository.
 
 Do not use lowercase label/taxonomy values such as `repo-operations`, `console`, `site-docs`, or `security-privacy` in hidden metadata unless the live GitHub Project Workstream options are migrated to those values.
 
@@ -225,7 +227,7 @@ Expected dry-run behavior:
    - `PROJECT_FIELD_HYDRATION_DRY_RUN` (`true` or `false`)
 7. Open or edit an issue with labels/metadata and confirm workflow logs decisions and project item ID.
 
-## Product Repo Setup
+## Participating Repo Setup
 
 After the reusable workflow is merged, add the caller workflow to each participating repo:
 
@@ -233,6 +235,7 @@ After the reusable workflow is merged, add the caller workflow to each participa
 - `arbiter-systems/ai-execution-service`
 - `arbiter-systems/arbiter-console`
 - `arbiter-systems/arbiter-site`
+- `arbiter-systems/security`
 
 Use this path in each repo:
 
@@ -264,4 +267,4 @@ jobs:
     secrets: inherit
 ```
 
-Validate by editing an issue in the product repo and confirming the workflow hydrates Project fields.
+Validate by editing an issue in the participating repo and confirming the workflow hydrates Project fields.
