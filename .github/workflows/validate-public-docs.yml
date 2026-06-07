@@ -16,14 +16,52 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Check Markdown formatting
-        run: npx --yes prettier@3.3.3 --check "**/*.{md,yml,yaml,json}"
+      - name: Collect changed docs files
+        id: changed-docs
+        shell: bash
+        run: |
+          set -euo pipefail
 
-      - name: Lint Markdown
-        run: npx --yes markdownlint-cli2@0.18.1 "**/*.md"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE_SHA="HEAD~1"
+            HEAD_SHA="HEAD"
+          fi
+
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" \
+            | grep -E '\.(md|ya?ml|json)$' \
+            | grep -v '^node_modules/' \
+            | sort > changed-docs.txt || true
+
+          if [[ -s changed-docs.txt ]]; then
+            echo "has_docs=true" >> "$GITHUB_OUTPUT"
+            cat changed-docs.txt
+          else
+            echo "has_docs=false" >> "$GITHUB_OUTPUT"
+            echo "No Markdown, YAML, or JSON files changed."
+          fi
+
+      - name: Check changed docs formatting
+        if: steps.changed-docs.outputs.has_docs == 'true'
+        run: xargs -a changed-docs.txt npx --yes prettier@3.3.3 --check
+
+      - name: Lint changed Markdown
+        if: steps.changed-docs.outputs.has_docs == 'true'
+        shell: bash
+        run: |
+          grep -E '\.md$' changed-docs.txt > changed-markdown.txt || true
+          if [[ -s changed-markdown.txt ]]; then
+            xargs -a changed-markdown.txt npx --yes markdownlint-cli2@0.18.1
+          else
+            echo "No Markdown files changed."
+          fi
