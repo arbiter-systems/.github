@@ -1,0 +1,66 @@
+name: Audit Blocked By Alignment
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_repo:
+        description: "Optional owner/repo filter, or comma-separated owner/repo list"
+        required: false
+        default: ""
+        type: string
+      limit:
+        description: "Maximum Project issue items to scan"
+        required: false
+        default: "100"
+        type: string
+      project:
+        description: "Project reference in org/number format"
+        required: false
+        default: "arbiter-systems/2"
+        type: string
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: audit-blocked-by-alignment-${{ inputs.target_repo }}-${{ inputs.limit }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Preflight audit configuration
+        env:
+          PROJECT_AUTOMATION_APP_ID: ${{ vars.PROJECT_AUTOMATION_APP_ID || secrets.PROJECT_AUTOMATION_APP_ID }}
+          PROJECT_AUTOMATION_PRIVATE_KEY: ${{ secrets.PROJECT_AUTOMATION_PRIVATE_KEY }}
+        run: |
+          if [ -z "${PROJECT_AUTOMATION_APP_ID}" ]; then
+            echo "[error] Missing PROJECT_AUTOMATION_APP_ID variable or secret"
+            exit 1
+          fi
+
+          if [ -z "${PROJECT_AUTOMATION_PRIVATE_KEY}" ]; then
+            echo "[error] Missing PROJECT_AUTOMATION_PRIVATE_KEY secret"
+            exit 1
+          fi
+
+          echo "[info] Blocked By alignment audit is read-only"
+
+      - name: Run Blocked By alignment audit
+        env:
+          PROJECT_AUTOMATION_APP_ID: ${{ vars.PROJECT_AUTOMATION_APP_ID || secrets.PROJECT_AUTOMATION_APP_ID }}
+          PROJECT_AUTOMATION_PRIVATE_KEY: ${{ secrets.PROJECT_AUTOMATION_PRIVATE_KEY }}
+        run: >
+          node scripts/audit-blocked-by-alignment.mjs
+          --project "${{ inputs.project }}"
+          --target-repo "${{ inputs.target_repo }}"
+          --limit "${{ inputs.limit }}"
