@@ -1,0 +1,27 @@
+# Global fallback
+* @patrickrcharles
+
+# GitHub/repo operations
+.github/ @patrickrcharles
+.github/workflows/ @patrickrcharles
+.github/CODEOWNERS @patrickrcharles
+CODEOWNERS @patrickrcharles
+
+# Organization default community health files
+profile/ @patrickrcharles
+ISSUE_TEMPLATE/ @patrickrcharles
+PULL_REQUEST_TEMPLATE.md @patrickrcharles
+SECURITY.md @patrickrcharles
+SUPPORT.md @patrickrcharles
+CODE_OF_CONDUCT.md @patrickrcharles
+CONTRIBUTING.md @patrickrcharles
+README.md @patrickrcharles
+
+# Project governance, taxonomy, and automation guidance
+docs/ @patrickrcharles
+scripts/ @patrickrcharles
+**/*taxonomy* @patrickrcharles
+**/*project* @patrickrcharles
+**/*workflow* @patrickrcharles
+**/*security* @patrickrcharles
+**/*governance* @patrickrcharles
