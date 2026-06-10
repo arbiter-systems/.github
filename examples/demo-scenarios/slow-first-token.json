@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "demo-scenario/v1",
+  "id": "slow-first-token",
+  "title": "Slow first token observed",
+  "description": "Shows delayed first-token behavior while preserving a successful terminal stream.",
+  "publicSafe": true,
+  "tags": ["demo", "latency", "streaming"],
+  "model": "openai",
+  "prompt": "Return a short public-safe response after a synthetic first-token delay.",
+  "maxTokens": 96,
+  "temperature": 0.2,
+  "metadata": {
+    "scenario": "slow-first-token",
+    "demoMode": true,
+    "latencyCase": "first-token-delay"
+  },
+  "fakeProvider": {
+    "behavior": "slow-first-token",
+    "delayFirstTokenMs": 2500,
+    "tokenChunks": [
+      "The first token was delayed, ",
+      "but the stream remained controlled ",
+      "and finished with receipt-safe evidence."
+    ]
+  },
+  "expectedTerminal": {
+    "type": "final",
+    "headline": "Slow first-token path completed successfully."
+  },
+  "evidence": {
+    "claim": "Arbiter can demonstrate latency-sensitive execution behavior without exposing private payloads.",
+    "highlights": [
+      "First-token delay is synthetic and deterministic.",
+      "The stream still reaches a successful terminal event.",
+      "Latency evidence remains safe for public demos."
+    ]
+  },
+  "ui": {
+    "cardTitle": "Slow first token",
+    "cardSummary": "Show delayed first-token behavior without live provider calls.",
+    "resultHeadline": "Delayed stream completed"
+  }
+}
