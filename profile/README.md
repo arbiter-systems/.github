@@ -23,4 +23,4 @@ Arbiter Systems is in early product development. Current work is focused on a bo
 
 For business, startup program, infrastructure credit, or design-partner inquiries:
 
-founder@arbitersystems.io
+[founder@arbitersystems.io](mailto:founder@arbitersystems.io)
