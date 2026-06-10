@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "demo-scenario/v1",
+  "id": "successful-stream",
+  "title": "Successful governed stream",
+  "description": "Shows a normal public-safe execution stream passing through the Arbiter control boundary.",
+  "publicSafe": true,
+  "tags": ["demo", "governance", "streaming"],
+  "model": "openai",
+  "prompt": "Summarize how Arbiter keeps an AI execution governed without exposing private prompt text.",
+  "maxTokens": 128,
+  "temperature": 0.2,
+  "metadata": {
+    "scenario": "successful-stream",
+    "demoMode": true,
+    "riskLevel": "low"
+  },
+  "fakeProvider": {
+    "behavior": "successful-stream",
+    "tokenChunks": [
+      "Arbiter accepts the request, ",
+      "applies policy checks, ",
+      "routes the model, ",
+      "and returns receipt-safe evidence."
+    ]
+  },
+  "expectedTerminal": {
+    "type": "final",
+    "headline": "Execution completed with governed streaming evidence."
+  },
+  "evidence": {
+    "claim": "The request completed through the governed execution path without exposing raw prompt content in the evidence panel.",
+    "highlights": [
+      "Tenant and correlation context are present.",
+      "Policy and route decisions are represented as receipt-safe evidence.",
+      "The terminal event is successful and public-safe."
+    ]
+  },
+  "ui": {
+    "cardTitle": "Successful stream",
+    "cardSummary": "Run a normal governed request through the execution boundary.",
+    "resultHeadline": "Governed stream completed"
+  }
+}

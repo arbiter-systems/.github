@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "demo-scenario/v1",
+  "id": "prompt-privacy",
+  "title": "Prompt privacy protected",
+  "description": "Shows metadata-first prompt privacy behavior for a public-safe synthetic request.",
+  "publicSafe": true,
+  "tags": ["demo", "privacy", "evidence"],
+  "model": "openai",
+  "prompt": "Use a synthetic support summary to explain prompt privacy without revealing private text.",
+  "maxTokens": 96,
+  "temperature": 0.2,
+  "metadata": {
+    "scenario": "prompt-privacy",
+    "demoMode": true,
+    "promptPrivacy": "metadata-first"
+  },
+  "fakeProvider": {
+    "behavior": "prompt-privacy",
+    "tokenChunks": [
+      "The request was handled with metadata-first evidence, ",
+      "keeping raw prompt text out of the receipt surface."
+    ]
+  },
+  "expectedTerminal": {
+    "type": "final",
+    "headline": "Prompt privacy evidence stayed metadata-first."
+  },
+  "evidence": {
+    "claim": "The demo evidence explains what happened without requiring raw prompt disclosure.",
+    "highlights": [
+      "Raw prompt content is not required in the evidence panel.",
+      "The scenario remains safe for screenshots and walkthroughs.",
+      "Receipt copy should describe posture, not private payloads."
+    ]
+  },
+  "ui": {
+    "cardTitle": "Prompt privacy",
+    "cardSummary": "Show how prompt privacy appears in demo evidence.",
+    "resultHeadline": "Prompt privacy protected"
+  }
+}
