@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/arbiter-systems/.github/contracts/demo-scenarios/demo-scenario.schema.json",
+  "title": "Arbiter Demo Scenario",
+  "description": "Public-safe executable demo scenario shared across Arbiter service and console repositories.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "title",
+    "description",
+    "publicSafe",
+    "model",
+    "prompt",
+    "maxTokens",
+    "temperature",
+    "expectedTerminal",
+    "evidence",
+    "ui"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "demo-scenario/v1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "description": "Stable lowercase kebab-case scenario id."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "publicSafe": {
+      "type": "boolean",
+      "const": true,
+      "description": "Must be true for any scenario used in public docs, screenshots, hosted demos, or console fixtures."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Execution request model or provider route alias understood by the consuming service."
+    },
+    "prompt": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64000,
+      "description": "Synthetic public-safe prompt text only. No proprietary prompts or user/customer data."
+    },
+    "maxTokens": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 128000
+    },
+    "temperature": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 2
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Public-safe scalar metadata only. Do not include secrets, headers, raw provider responses, prompts, or customer data.",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "string" },
+          { "type": "number" },
+          { "type": "integer" },
+          { "type": "boolean" }
+        ]
+      },
+      "propertyNames": {
+        "pattern": "^[A-Za-z0-9_.:-]+$"
+      },
+      "maxProperties": 32
+    },
+    "fakeProvider": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional public-safe deterministic provider behavior for local demos. Consuming repos may mirror this into their own fixture shape.",
+      "properties": {
+        "behavior": {
+          "type": "string",
+          "enum": [
+            "successful-stream",
+            "provider-timeout",
+            "provider-error",
+            "slow-first-token",
+            "prompt-privacy",
+            "unsupported-provider-metadata"
+          ]
+        },
+        "tokenChunks": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "maxItems": 20
+        },
+        "delayFirstTokenMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 30000
+        },
+        "terminalErrorCode": {
+          "type": "string",
+          "pattern": "^[A-Z0-9_]+$"
+        }
+      }
+    },
+    "expectedTerminal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "headline"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["final", "error"]
+        },
+        "errorCode": {
+          "type": "string",
+          "pattern": "^[A-Z0-9_]+$"
+        },
+        "headline": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claim", "highlights"],
+      "properties": {
+        "claim": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "highlights": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": { "type": "string", "minLength": 1, "maxLength": 180 }
+        }
+      }
+    },
+    "ui": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cardTitle", "cardSummary", "resultHeadline"],
+      "properties": {
+        "cardTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "cardSummary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 220
+        },
+        "resultHeadline": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        }
+      }
+    }
+  }
+}
