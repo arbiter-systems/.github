@@ -65,3 +65,6 @@ jobs:
           else
             echo "No Markdown files changed."
           fi
+
+      - name: Validate demo scenarios
+        run: node scripts/validate-demo-scenarios.mjs

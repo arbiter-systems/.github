@@ -8,6 +8,7 @@ The contract lives in the public `.github` repository so service repositories, t
 
 - Schema: `contracts/demo-scenarios/demo-scenario.schema.json`
 - Examples: `examples/demo-scenarios/*.json`
+- Validator: `scripts/validate-demo-scenarios.mjs`
 
 ## Contract goal
 
@@ -193,19 +194,22 @@ Breaking changes require a new schema version. Additive fields may be introduced
 
 ## Validation
 
-Manual validation is acceptable for the first pass.
-
-Future validation should use:
+Run the shared validator from the repository root:
 
 ```bash
 node scripts/validate-demo-scenarios.mjs
 ```
 
-The validation script should verify:
+The validation script verifies:
 
-- Every example conforms to the JSON schema.
+- Every example is valid JSON and aligns with the shared schema's required fields and declared properties.
 - `publicSafe` is always true.
-- Scenario IDs match file names.
+- Scenario IDs are stable lowercase kebab-case and match file names.
+- Duplicate IDs are rejected.
+- The canonical scenario set is complete.
+- `expectedTerminal.type` is `final` or `error`.
+- `expectedTerminal.errorCode` is absent for `final` scenarios and present for `error` scenarios.
+- `fakeProvider` fields and behavior values stay within the allowlist.
 - Required evidence and UI copy is present.
-- Restricted metadata keys are rejected or explicitly treated as negative fixtures.
+- Restricted metadata keys are rejected unless they belong to the intentional negative fixture.
 - No obvious secret placeholders, auth headers, or raw provider payload fields are present.
