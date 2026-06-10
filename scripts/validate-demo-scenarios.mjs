@@ -8,6 +8,16 @@ const repoRoot = process.cwd();
 const schemaPath = path.join(repoRoot, 'contracts', 'demo-scenarios', 'demo-scenario.schema.json');
 const examplesDir = path.join(repoRoot, 'examples', 'demo-scenarios');
 
+const canonicalScenarioIds = new Set([
+  'successful-stream',
+  'provider-timeout',
+  'provider-error',
+  'slow-first-token',
+  'prompt-privacy',
+  'unsupported-provider-metadata'
+]);
+
+const negativeFixtureIds = new Set(['unsupported-provider-metadata']);
 const scenarioIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const errorCodePattern = /^[A-Z0-9_]+$/;
 const metadataKeyPattern = /^[A-Za-z0-9_.:-]+$/;
@@ -17,14 +27,7 @@ const allowedFakeProviderKeys = new Set([
   'delayFirstTokenMs',
   'terminalErrorCode'
 ]);
-const allowedFakeProviderBehaviors = new Set([
-  'successful-stream',
-  'provider-timeout',
-  'provider-error',
-  'slow-first-token',
-  'prompt-privacy',
-  'unsupported-provider-metadata'
-]);
+const allowedFakeProviderBehaviors = new Set(canonicalScenarioIds);
 const restrictedMetadataFragments = [
   'authorization',
   'secret',
@@ -73,11 +76,51 @@ function requireString(fileName, scenario, field, maxLength) {
   }
 }
 
-function validateScenario(fileName, scenario, seenIds) {
+function validateSchema(schema) {
+  if (!isObject(schema)) {
+    addError(path.relative(repoRoot, schemaPath), 'schema root must be an object');
+    return { required: new Set(), properties: new Set() };
+  }
+
+  if (schema.$schema !== 'https://json-schema.org/draft/2020-12/schema') {
+    addError(path.relative(repoRoot, schemaPath), 'schema must declare JSON Schema draft 2020-12');
+  }
+
+  if (!Array.isArray(schema.required)) {
+    addError(path.relative(repoRoot, schemaPath), 'schema.required must be an array');
+  }
+
+  if (!isObject(schema.properties)) {
+    addError(path.relative(repoRoot, schemaPath), 'schema.properties must be an object');
+  }
+
+  return {
+    required: new Set(Array.isArray(schema.required) ? schema.required : []),
+    properties: new Set(isObject(schema.properties) ? Object.keys(schema.properties) : [])
+  };
+}
+
+function validateSchemaAlignment(fileName, scenario, schemaInfo) {
+  for (const field of schemaInfo.required) {
+    if (!(field in scenario)) {
+      addError(fileName, `missing schema-required field ${field}`);
+    }
+  }
+
+  for (const field of Object.keys(scenario)) {
+    if (!schemaInfo.properties.has(field)) {
+      addError(fileName, `field ${field} is not declared by the shared schema`);
+    }
+  }
+}
+
+function validateScenario(fileName, scenario, seenIds, schemaInfo) {
   if (!isObject(scenario)) {
     addError(fileName, 'scenario root must be an object');
     return;
   }
+
+  validateSchemaAlignment(fileName, scenario, schemaInfo);
 
   if (scenario.schemaVersion !== 'demo-scenario/v1') {
     addError(fileName, 'schemaVersion must be demo-scenario/v1');
@@ -113,27 +156,16 @@ function validateScenario(fileName, scenario, seenIds) {
     addError(fileName, 'maxTokens must be an integer from 1 through 128000');
   }
 
-  if (typeof scenario.temperature !== 'number' || Number.isNaN(scenario.temperature) || scenario.temperature < 0 || scenario.temperature > 2) {
+  if (
+    typeof scenario.temperature !== 'number' ||
+    Number.isNaN(scenario.temperature) ||
+    scenario.temperature < 0 ||
+    scenario.temperature > 2
+  ) {
     addError(fileName, 'temperature must be a number from 0 through 2');
   }
 
-  if (scenario.tags !== undefined) {
-    if (!Array.isArray(scenario.tags)) {
-      addError(fileName, 'tags must be an array when present');
-    } else {
-      const tags = new Set();
-      for (const tag of scenario.tags) {
-        if (typeof tag !== 'string' || !scenarioIdPattern.test(tag)) {
-          addError(fileName, `tag ${JSON.stringify(tag)} must be lowercase kebab-case`);
-        }
-        if (tags.has(tag)) {
-          addError(fileName, `duplicate tag ${tag}`);
-        }
-        tags.add(tag);
-      }
-    }
-  }
-
+  validateTags(fileName, scenario.tags);
   validateMetadata(fileName, scenario.metadata, scenario.id);
   validateFakeProvider(fileName, scenario.fakeProvider);
   validateExpectedTerminal(fileName, scenario.expectedTerminal);
@@ -141,8 +173,33 @@ function validateScenario(fileName, scenario, seenIds) {
   validateUi(fileName, scenario.ui);
 }
 
+function validateTags(fileName, tags) {
+  if (tags === undefined) {
+    return;
+  }
+
+  if (!Array.isArray(tags)) {
+    addError(fileName, 'tags must be an array when present');
+    return;
+  }
+
+  const seenTags = new Set();
+  for (const tag of tags) {
+    if (typeof tag !== 'string' || !scenarioIdPattern.test(tag)) {
+      addError(fileName, `tag ${JSON.stringify(tag)} must be lowercase kebab-case`);
+    }
+    if (seenTags.has(tag)) {
+      addError(fileName, `duplicate tag ${tag}`);
+    }
+    seenTags.add(tag);
+  }
+}
+
 function validateMetadata(fileName, metadata, scenarioId) {
   if (metadata === undefined) {
+    if (negativeFixtureIds.has(scenarioId)) {
+      addError(fileName, 'negative metadata fixture must include metadata with a restricted key');
+    }
     return;
   }
 
@@ -156,6 +213,9 @@ function validateMetadata(fileName, metadata, scenarioId) {
     addError(fileName, 'metadata cannot contain more than 32 entries');
   }
 
+  const isNegativeFixture = negativeFixtureIds.has(scenarioId);
+  let restrictedKeyCount = 0;
+
   for (const [key, value] of entries) {
     if (!metadataKeyPattern.test(key)) {
       addError(fileName, `metadata key ${key} contains unsupported characters`);
@@ -165,11 +225,17 @@ function validateMetadata(fileName, metadata, scenarioId) {
     }
 
     const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const isNegativeFixture = scenarioId === 'unsupported-provider-metadata';
     const isRestricted = restrictedMetadataFragments.some((fragment) => normalizedKey.includes(fragment));
+    if (isRestricted) {
+      restrictedKeyCount += 1;
+    }
     if (isRestricted && !isNegativeFixture) {
       addError(fileName, `metadata key ${key} is restricted for public demo fixtures`);
     }
+  }
+
+  if (isNegativeFixture && restrictedKeyCount === 0) {
+    addError(fileName, 'negative metadata fixture must contain at least one intentionally restricted metadata key');
   }
 }
 
@@ -206,7 +272,11 @@ function validateFakeProvider(fileName, fakeProvider) {
   }
 
   if (fakeProvider.delayFirstTokenMs !== undefined) {
-    if (!Number.isInteger(fakeProvider.delayFirstTokenMs) || fakeProvider.delayFirstTokenMs < 0 || fakeProvider.delayFirstTokenMs > 30000) {
+    if (
+      !Number.isInteger(fakeProvider.delayFirstTokenMs) ||
+      fakeProvider.delayFirstTokenMs < 0 ||
+      fakeProvider.delayFirstTokenMs > 30000
+    ) {
       addError(fileName, 'fakeProvider.delayFirstTokenMs must be an integer from 0 through 30000');
     }
   }
@@ -283,29 +353,42 @@ function requireNestedString(fileName, object, label, key, maxLength) {
   }
 }
 
-const schema = readJson(schemaPath, schemaPath);
-if (!schema) {
-  process.exit(1);
+function validateCanonicalScenarios(seenIds) {
+  for (const expectedId of canonicalScenarioIds) {
+    if (!seenIds.has(expectedId)) {
+      addError(path.relative(repoRoot, examplesDir), `missing canonical scenario ${expectedId}.json`);
+    }
+  }
+
+  for (const id of seenIds) {
+    if (!canonicalScenarioIds.has(id)) {
+      addError(`${id}.json`, 'scenario id is not part of the canonical demo scenario set');
+    }
+  }
 }
 
+const schema = readJson(schemaPath, path.relative(repoRoot, schemaPath));
+const schemaInfo = schema ? validateSchema(schema) : { required: new Set(), properties: new Set() };
+
 if (!fs.existsSync(examplesDir)) {
-  addError(examplesDir, 'examples directory does not exist');
+  addError(path.relative(repoRoot, examplesDir), 'examples directory does not exist');
 } else {
   const files = fs.readdirSync(examplesDir)
     .filter((file) => file.endsWith('.json'))
     .sort();
 
   if (files.length === 0) {
-    addError(examplesDir, 'no demo scenario examples found');
+    addError(path.relative(repoRoot, examplesDir), 'no demo scenario examples found');
   }
 
   const seenIds = new Set();
   for (const file of files) {
     const scenario = readJson(path.join(examplesDir, file), file);
     if (scenario) {
-      validateScenario(file, scenario, seenIds);
+      validateScenario(file, scenario, seenIds, schemaInfo);
     }
   }
+  validateCanonicalScenarios(seenIds);
 }
 
 if (errors.length > 0) {
