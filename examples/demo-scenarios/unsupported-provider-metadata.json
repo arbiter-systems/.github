@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "demo-scenario/v1",
+  "id": "unsupported-provider-metadata",
+  "title": "Unsupported metadata rejected",
+  "description": "Negative fixture showing provider metadata that should be rejected by service-specific validators before public demo use.",
+  "publicSafe": true,
+  "tags": ["demo", "validation", "negative-fixture"],
+  "model": "openai",
+  "prompt": "This negative fixture demonstrates validator rejection for unsupported provider metadata.",
+  "maxTokens": 64,
+  "temperature": 0.1,
+  "metadata": {
+    "scenario": "unsupported-provider-metadata",
+    "demoMode": true,
+    "providerResponsePayload": "not-allowed-in-public-demo-fixtures"
+  },
+  "fakeProvider": {
+    "behavior": "unsupported-provider-metadata",
+    "terminalErrorCode": "UNSUPPORTED_PROVIDER_METADATA"
+  },
+  "expectedTerminal": {
+    "type": "error",
+    "errorCode": "UNSUPPORTED_PROVIDER_METADATA",
+    "headline": "Unsupported provider metadata was rejected."
+  },
+  "evidence": {
+    "claim": "Validators should reject fixtures that attempt to include provider payload metadata in public demo artifacts.",
+    "highlights": [
+      "This is a negative fixture for validation tooling.",
+      "Do not use this scenario for public walkthrough screenshots.",
+      "Provider payload fields must stay out of demo evidence."
+    ]
+  },
+  "ui": {
+    "cardTitle": "Unsupported metadata",
+    "cardSummary": "Validate rejection of unsafe provider metadata fields.",
+    "resultHeadline": "Metadata rejected"
+  }
+}
