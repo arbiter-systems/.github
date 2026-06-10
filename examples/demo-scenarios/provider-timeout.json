@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "demo-scenario/v1",
+  "id": "provider-timeout",
+  "title": "Provider timeout contained",
+  "description": "Shows a public-safe timeout scenario where the execution boundary returns a structured terminal error.",
+  "publicSafe": true,
+  "tags": ["demo", "resilience", "timeout"],
+  "model": "openai",
+  "prompt": "Return a short timeout demonstration response for a synthetic provider delay.",
+  "maxTokens": 64,
+  "temperature": 0.1,
+  "metadata": {
+    "scenario": "provider-timeout",
+    "demoMode": true,
+    "expectedFailure": true
+  },
+  "fakeProvider": {
+    "behavior": "provider-timeout",
+    "delayFirstTokenMs": 30000,
+    "terminalErrorCode": "PROVIDER_TIMEOUT"
+  },
+  "expectedTerminal": {
+    "type": "error",
+    "errorCode": "PROVIDER_TIMEOUT",
+    "headline": "Provider timeout returned as structured evidence."
+  },
+  "evidence": {
+    "claim": "Arbiter surfaces the timeout as a controlled terminal event instead of leaking provider internals.",
+    "highlights": [
+      "The terminal status is structured and public-safe.",
+      "Provider internals and raw payloads are not exposed.",
+      "The demo can show failure handling without live credentials."
+    ]
+  },
+  "ui": {
+    "cardTitle": "Provider timeout",
+    "cardSummary": "Show a controlled timeout path with structured evidence.",
+    "resultHeadline": "Timeout contained"
+  }
+}
