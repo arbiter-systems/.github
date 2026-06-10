@@ -1,6 +1,6 @@
 # Arbiter Systems
 
-Arbiter Systems builds infrastructure for controlling, routing, observing, and governing AI execution across applications, agents, workflows, and model providers.
+Arbiter Systems builds infrastructure for controlling, routing, observing, and governing AI execution across model providers.
 
 Our current focus is an **AI Execution Firewall** for engineering teams that need better control over AI-powered execution before it becomes expensive, unreliable, or difficult to govern.
 
