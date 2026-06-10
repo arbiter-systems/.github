@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "demo-scenario/v1",
+  "id": "provider-error",
+  "title": "Provider error normalized",
+  "description": "Shows a synthetic provider error normalized into a receipt-safe terminal event.",
+  "publicSafe": true,
+  "tags": ["demo", "resilience", "error"],
+  "model": "openai",
+  "prompt": "Return a short synthetic provider error demonstration without exposing provider payloads.",
+  "maxTokens": 64,
+  "temperature": 0.1,
+  "metadata": {
+    "scenario": "provider-error",
+    "demoMode": true,
+    "expectedFailure": true
+  },
+  "fakeProvider": {
+    "behavior": "provider-error",
+    "terminalErrorCode": "PROVIDER_ERROR"
+  },
+  "expectedTerminal": {
+    "type": "error",
+    "errorCode": "PROVIDER_ERROR",
+    "headline": "Provider error was normalized safely."
+  },
+  "evidence": {
+    "claim": "Arbiter converts the provider failure into safe execution evidence without raw upstream details.",
+    "highlights": [
+      "The error code is stable and public-safe.",
+      "Raw provider responses remain outside the demo artifact.",
+      "The console can explain the failure without sensitive details."
+    ]
+  },
+  "ui": {
+    "cardTitle": "Provider error",
+    "cardSummary": "Show a normalized provider failure path.",
+    "resultHeadline": "Provider error normalized"
+  }
+}
