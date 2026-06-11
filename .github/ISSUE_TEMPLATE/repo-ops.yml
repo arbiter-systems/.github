@@ -1,0 +1,89 @@
+name: Repo operations issue
+description: Track repository hygiene, templates, labels, public docs, workflows, or governance cleanup.
+title: "chore(repo): "
+labels: ["type/chore", "area/governance"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use public-safe wording only. Do not include secrets, tokens, provider keys, private roadmap details, incident data, internal implementation sequencing, raw prompts, customer data, provider payloads, or local logs.
+  - type: input
+    id: affected_repo
+    attributes:
+      label: Affected repository or governance area
+      placeholder: .github, company, control-plane-api, ai-execution-service, arbiter-console, arbiter-site, or security
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What repository operation or governance cleanup is needed?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why this needs cleanup or standardization.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      value: |
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals
+      value: |
+        - No runtime application changes.
+        - No broad issue migration or mass relabeling unless explicitly scoped.
+        - No Project field hydration or issue-body backfilling.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Suggested validation
+      placeholder: |
+        ```bash
+        npx prettier --check "**/*.{md,yml,yaml,json}"
+        ```
+    validations:
+      required: true
+  - type: textarea
+    id: public_boundary
+    attributes:
+      label: Public/private boundary check
+      placeholder: Confirm this work does not expose private planning, raw prompts, secrets, customer data, provider payloads, or unsupported claims.
+    validations:
+      required: true
+  - type: dropdown
+    id: readiness
+    attributes:
+      label: Implementation readiness
+      options:
+        - ready
+        - needs-clarification
+        - blocked
+        - discovery-only
+    validations:
+      required: true
+  - type: textarea
+    id: blockers
+    attributes:
+      label: Dependencies or blockers
+      placeholder: None
