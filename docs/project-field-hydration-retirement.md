@@ -21,17 +21,17 @@ quality or delivery throughput.
 
 ## Replacement mapping
 
-| Retired field / automation | Replacement                                           |
-| -------------------------- | ----------------------------------------------------- |
-| Workstream                 | `area/*` labels                                      |
-| Phase                      | `phase/*` labels and milestones                      |
-| Release Gate               | milestones or issue body                             |
-| Confidence                 | issue discussion when needed                         |
-| Scope Risk                 | issue discussion when needed                         |
-| Implementation Order       | weekly triage ranking                                |
-| Blocked By                 | `## Blocked by` issue links plus `status/blocked`    |
-| Validation Command         | `## Validation` issue body section                   |
-| Implementation Readiness   | ready checklist plus `status/ready`                  |
+Use these replacements instead of hydrated project fields:
+
+- Workstream: `area/*` labels
+- Phase: `phase/*` labels and milestones
+- Release Gate: milestones or issue body
+- Confidence: issue discussion when needed
+- Scope Risk: issue discussion when needed
+- Implementation Order: weekly triage ranking
+- Blocked By: `## Blocked by` issue links plus `status/blocked`
+- Validation Command: `## Validation` issue body section
+- Implementation Readiness: ready checklist plus `status/ready`
 
 ## Retired workflows
 
