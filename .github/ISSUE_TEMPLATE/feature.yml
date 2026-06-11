@@ -1,34 +1,56 @@
-name: Feature
-description: Propose feature work for Arbiter Systems repositories.
+name: Feature issue
+description: Propose scoped product, service, console, site, or operations feature work.
 title: "feat: "
 labels: ["type/feature"]
 body:
-  - type: textarea
-    id: goal
+  - type: markdown
     attributes:
-      label: Goal
-      description: What outcome should this feature achieve?
+      value: |
+        Use public-safe wording only. Do not include secrets, provider keys, raw prompts, customer data, provider payloads, private roadmap details, incident data, or unsupported compliance, savings, customer, or hosted-demo claims.
+  - type: input
+    id: affected_repo
+    attributes:
+      label: Affected repository or area
+      placeholder: control-plane-api, ai-execution-service, arbiter-console, arbiter-site, .github, company, or security
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One or two public-safe sentences describing the feature.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why this matters and what problem it solves.
     validations:
       required: true
   - type: textarea
     id: scope
     attributes:
       label: Scope
-      description: What is in scope for this issue?
+      description: Concrete work included in this issue.
+      value: |
+        - [ ] ...
     validations:
       required: true
   - type: textarea
     id: non_goals
     attributes:
       label: Non-goals
-      description: What is explicitly out of scope?
+      description: Explicitly list what should not be changed.
+      value: |
+        - No unrelated refactors.
+        - No Project field hydration or issue-body backfilling.
     validations:
-      required: false
+      required: true
   - type: textarea
-    id: acceptance_criteria
+    id: acceptance
     attributes:
       label: Acceptance criteria
-      description: Define the conditions for completion.
       value: |
         - [ ] ...
     validations:
@@ -36,50 +58,47 @@ body:
   - type: textarea
     id: validation
     attributes:
-      label: Validation
-      description: Codex-ready validation commands or evidence that should be produced.
+      label: Suggested validation
+      description: Commands, manual checks, or review steps.
+      placeholder: |
+        ```bash
+        npm test
+        ```
     validations:
-      required: false
-  - type: markdown
-    attributes:
-      value: |
-        ## Suggested labels
-
-        Labels must come from the canonical taxonomy: ../../docs/operations/github-label-taxonomy.md
-
-        Canonical label families:
-        - type/*
-        - priority/*
-        - phase/*
-        - area/*
-        - component/*
-
-        Do not create labels for Project field values; see the label taxonomy for the boundary between labels and Project fields.
-  - type: markdown
-    attributes:
-      value: |
-        ## Suggested Project fields
-
-        Project fields are managed in the Arbiter GitHub Project and are not represented as labels. See: ../../docs/operations/github-project-operating-model.md
-
-        - Status:
-        - Implementation Order:
-        - Lane:
-        - Blocked By:
-        - Release Gate:
-        - Validation Command:
-        - Agent:
-        - Last Reviewed:
-        - Confidence:
-        - Implementation Readiness:
-        - Scope Risk:
-        - Project Priority:
-        - Phase:
-        - Workstream:
+      required: true
   - type: textarea
-    id: follow_ups
+    id: security_privacy
     attributes:
-      label: Follow-up issues
-      description: Capture deferred work discovered during implementation instead of expanding this issue.
+      label: Security and privacy considerations
+      description: Note sensitive-data boundaries or why none apply.
+      placeholder: Public-safe only; no raw prompts, secrets, customer data, logs, or provider payloads.
     validations:
-      required: false
+      required: true
+  - type: dropdown
+    id: release_gate
+    attributes:
+      label: MVP or release gate relevance
+      options:
+        - local-mvp
+        - hosted-demo
+        - private-beta
+        - post-mvp
+        - not-release-gated
+    validations:
+      required: true
+  - type: dropdown
+    id: readiness
+    attributes:
+      label: Implementation readiness
+      options:
+        - ready
+        - needs-clarification
+        - blocked
+        - discovery-only
+    validations:
+      required: true
+  - type: textarea
+    id: blockers
+    attributes:
+      label: Dependencies or blockers
+      placeholder: None

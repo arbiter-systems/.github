@@ -1,55 +1,54 @@
-name: Bug issue
-description: Report a defect, regression, or broken expected behavior.
-title: "fix: "
-labels: ["type/bug"]
+name: Architecture or ADR issue
+description: Propose or track an architecture decision, boundary, or design record.
+title: "arch: "
+labels: ["area/architecture"]
 body:
   - type: markdown
     attributes:
       value: |
-        Use public-safe wording only. Do not paste secrets, tokens, provider keys, raw prompts, customer data, provider payloads, private links, local logs, stack traces with sensitive paths, or incident details.
+        Use public-safe wording only. Do not include secrets, private topology details, provider credentials, raw prompts, customer data, private roadmap details, or unsupported product claims.
   - type: input
     id: affected_repo
     attributes:
-      label: Affected repository or area
+      label: Affected repository or system boundary
       placeholder: control-plane-api, ai-execution-service, arbiter-console, arbiter-site, .github, company, or security
     validations:
       required: true
   - type: textarea
     id: summary
     attributes:
-      label: Summary
-      description: What is broken?
+      label: Decision or architecture summary
+      description: What decision, boundary, or design needs to be made or documented?
     validations:
       required: true
   - type: textarea
-    id: expected
+    id: context
     attributes:
-      label: Expected behavior
+      label: Context and forces
+      description: Describe the constraints, tradeoffs, and drivers in public-safe terms.
     validations:
       required: true
   - type: textarea
-    id: actual
+    id: options
     attributes:
-      label: Actual behavior
-      description: Keep this public-safe. Summarize logs instead of pasting sensitive output.
-    validations:
-      required: true
-  - type: textarea
-    id: reproduction
-    attributes:
-      label: Reproduction or evidence
-      description: Provide safe reproduction steps or sanitized evidence.
+      label: Options considered
       value: |
-        1. ...
-        2. ...
-        3. ...
+        - Option A: ...
+        - Option B: ...
+        - Option C: ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_decision
+    attributes:
+      label: Proposed decision
+      description: State the preferred direction if known.
     validations:
       required: true
   - type: textarea
     id: scope
     attributes:
       label: Scope
-      description: What should be fixed in this issue?
       value: |
         - [ ] ...
     validations:
@@ -59,8 +58,9 @@ body:
     attributes:
       label: Non-goals
       value: |
-        - No unrelated refactors.
+        - No broad rewrite unless explicitly approved.
         - No Project field hydration or issue-body backfilling.
+        - No private implementation runbooks in public docs.
     validations:
       required: true
   - type: textarea
@@ -68,35 +68,23 @@ body:
     attributes:
       label: Acceptance criteria
       value: |
-        - [ ] ...
+        - [ ] Decision is documented.
+        - [ ] Tradeoffs are captured.
+        - [ ] Follow-up implementation issues are linked when needed.
     validations:
       required: true
   - type: textarea
     id: validation
     attributes:
       label: Suggested validation
-      placeholder: |
-        ```bash
-        npm test
-        ```
+      description: Manual review, docs checks, architecture tests, or repo-specific commands.
     validations:
       required: true
   - type: textarea
     id: security_privacy
     attributes:
       label: Security and privacy considerations
-      placeholder: Public-safe only; no raw prompts, secrets, customer data, logs, or provider payloads.
-    validations:
-      required: true
-  - type: dropdown
-    id: severity
-    attributes:
-      label: Severity
-      options:
-        - blocker
-        - high
-        - medium
-        - low
+      placeholder: Public-safe only; no sensitive architecture details, secrets, raw prompts, or customer data.
     validations:
       required: true
   - type: dropdown

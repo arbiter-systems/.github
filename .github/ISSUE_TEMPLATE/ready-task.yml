@@ -1,31 +1,31 @@
-name: Docs issue
-description: Track public-safe documentation changes.
-title: "docs: "
-labels: ["type/docs"]
+name: Ready task
+description: Create a scoped task with clear acceptance criteria and validation.
+title: "chore: "
+labels: ["type/chore"]
 body:
   - type: markdown
     attributes:
       value: |
-        Use public-safe wording only. Do not include private roadmap details, internal implementation sequencing, raw prompts, provider payloads, customer data, private links, or unsupported compliance/savings/customer claims.
+        Keep the issue public-safe and scoped.
   - type: input
-    id: affected_docs
+    id: affected_repo
     attributes:
-      label: Affected docs or repository area
-      placeholder: docs/engineering/testing-standard.md, AGENTS.md, README.md, .github templates
+      label: Affected repository or area
+      placeholder: control-plane-api, ai-execution-service, arbiter-console, arbiter-site, .github, company, or security
     validations:
       required: true
   - type: textarea
     id: summary
     attributes:
       label: Summary
-      description: What documentation should change?
+      description: One sentence describing the task.
     validations:
       required: true
   - type: textarea
     id: context
     attributes:
       label: Context
-      description: Why is this doc change needed?
+      description: Why this task exists.
     validations:
       required: true
   - type: textarea
@@ -41,9 +41,9 @@ body:
     attributes:
       label: Non-goals
       value: |
-        - No runtime code changes.
-        - No Project field hydration or issue-body backfilling.
-        - No private runbooks or sensitive implementation details in public docs.
+        - No unrelated refactors.
+        - No broad issue migration.
+        - No metadata automation.
     validations:
       required: true
   - type: textarea
@@ -57,18 +57,8 @@ body:
   - type: textarea
     id: validation
     attributes:
-      label: Suggested validation
-      placeholder: |
-        ```bash
-        npx prettier --check "**/*.{md,yml,yaml,json}"
-        ```
-    validations:
-      required: true
-  - type: textarea
-    id: security_privacy
-    attributes:
-      label: Public/private boundary check
-      placeholder: Confirm this doc change does not expose secrets, raw prompts, customer data, provider payloads, private planning, or unsupported claims.
+      label: Required validation
+      placeholder: npm test
     validations:
       required: true
   - type: dropdown
@@ -81,6 +71,17 @@ body:
         - private-beta
         - post-mvp
         - not-release-gated
+    validations:
+      required: true
+  - type: dropdown
+    id: readiness
+    attributes:
+      label: Readiness
+      options:
+        - ready
+        - needs-clarification
+        - blocked
+        - discovery-only
     validations:
       required: true
   - type: textarea

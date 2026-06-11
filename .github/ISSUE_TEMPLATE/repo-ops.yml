@@ -1,31 +1,31 @@
-name: Docs issue
-description: Track public-safe documentation changes.
-title: "docs: "
-labels: ["type/docs"]
+name: Repo operations issue
+description: Track repository hygiene, templates, labels, public docs, workflows, or governance cleanup.
+title: "chore(repo): "
+labels: ["type/chore", "area/governance"]
 body:
   - type: markdown
     attributes:
       value: |
-        Use public-safe wording only. Do not include private roadmap details, internal implementation sequencing, raw prompts, provider payloads, customer data, private links, or unsupported compliance/savings/customer claims.
+        Use public-safe wording only. Do not include secrets, tokens, provider keys, private roadmap details, incident data, internal implementation sequencing, raw prompts, customer data, provider payloads, or local logs.
   - type: input
-    id: affected_docs
+    id: affected_repo
     attributes:
-      label: Affected docs or repository area
-      placeholder: docs/engineering/testing-standard.md, AGENTS.md, README.md, .github templates
+      label: Affected repository or governance area
+      placeholder: .github, company, control-plane-api, ai-execution-service, arbiter-console, arbiter-site, or security
     validations:
       required: true
   - type: textarea
     id: summary
     attributes:
       label: Summary
-      description: What documentation should change?
+      description: What repository operation or governance cleanup is needed?
     validations:
       required: true
   - type: textarea
     id: context
     attributes:
       label: Context
-      description: Why is this doc change needed?
+      description: Why this needs cleanup or standardization.
     validations:
       required: true
   - type: textarea
@@ -41,9 +41,9 @@ body:
     attributes:
       label: Non-goals
       value: |
-        - No runtime code changes.
+        - No runtime application changes.
+        - No broad issue migration or mass relabeling unless explicitly scoped.
         - No Project field hydration or issue-body backfilling.
-        - No private runbooks or sensitive implementation details in public docs.
     validations:
       required: true
   - type: textarea
@@ -65,22 +65,21 @@ body:
     validations:
       required: true
   - type: textarea
-    id: security_privacy
+    id: public_boundary
     attributes:
       label: Public/private boundary check
-      placeholder: Confirm this doc change does not expose secrets, raw prompts, customer data, provider payloads, private planning, or unsupported claims.
+      placeholder: Confirm this work does not expose private planning, raw prompts, secrets, customer data, provider payloads, or unsupported claims.
     validations:
       required: true
   - type: dropdown
-    id: release_gate
+    id: readiness
     attributes:
-      label: MVP or release gate relevance
+      label: Implementation readiness
       options:
-        - local-mvp
-        - hosted-demo
-        - private-beta
-        - post-mvp
-        - not-release-gated
+        - ready
+        - needs-clarification
+        - blocked
+        - discovery-only
     validations:
       required: true
   - type: textarea

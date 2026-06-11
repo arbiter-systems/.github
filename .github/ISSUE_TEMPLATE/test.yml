@@ -1,12 +1,12 @@
-name: Bug issue
-description: Report a defect, regression, or broken expected behavior.
-title: "fix: "
-labels: ["type/bug"]
+name: Test issue
+description: Track test coverage, regression tests, contract tests, or validation-only work.
+title: "test: "
+labels: ["type/test"]
 body:
   - type: markdown
     attributes:
       value: |
-        Use public-safe wording only. Do not paste secrets, tokens, provider keys, raw prompts, customer data, provider payloads, private links, local logs, stack traces with sensitive paths, or incident details.
+        Use public-safe wording only. Do not include secrets, raw prompts, customer data, provider payloads, private links, local logs, or environment dumps.
   - type: input
     id: affected_repo
     attributes:
@@ -18,40 +18,23 @@ body:
     id: summary
     attributes:
       label: Summary
-      description: What is broken?
+      description: What test or validation gap should be closed?
     validations:
       required: true
   - type: textarea
-    id: expected
+    id: context
     attributes:
-      label: Expected behavior
-    validations:
-      required: true
-  - type: textarea
-    id: actual
-    attributes:
-      label: Actual behavior
-      description: Keep this public-safe. Summarize logs instead of pasting sensitive output.
-    validations:
-      required: true
-  - type: textarea
-    id: reproduction
-    attributes:
-      label: Reproduction or evidence
-      description: Provide safe reproduction steps or sanitized evidence.
-      value: |
-        1. ...
-        2. ...
-        3. ...
+      label: Context
+      description: Why this test matters and what risk it reduces.
     validations:
       required: true
   - type: textarea
     id: scope
     attributes:
       label: Scope
-      description: What should be fixed in this issue?
       value: |
-        - [ ] ...
+        - [ ] Add or update ...
+        - [ ] Verify ...
     validations:
       required: true
   - type: textarea
@@ -59,7 +42,7 @@ body:
     attributes:
       label: Non-goals
       value: |
-        - No unrelated refactors.
+        - No runtime behavior changes unless required to make the testable contract explicit.
         - No Project field hydration or issue-body backfilling.
     validations:
       required: true
@@ -68,7 +51,9 @@ body:
     attributes:
       label: Acceptance criteria
       value: |
-        - [ ] ...
+        - [ ] Test coverage exists for the stated scenario.
+        - [ ] Test fails for the old/broken behavior when applicable.
+        - [ ] Validation command is documented.
     validations:
       required: true
   - type: textarea
@@ -77,6 +62,8 @@ body:
       label: Suggested validation
       placeholder: |
         ```bash
+        dotnet test
+        pytest
         npm test
         ```
     validations:
@@ -85,18 +72,7 @@ body:
     id: security_privacy
     attributes:
       label: Security and privacy considerations
-      placeholder: Public-safe only; no raw prompts, secrets, customer data, logs, or provider payloads.
-    validations:
-      required: true
-  - type: dropdown
-    id: severity
-    attributes:
-      label: Severity
-      options:
-        - blocker
-        - high
-        - medium
-        - low
+      placeholder: Confirm fixtures are synthetic and public-safe.
     validations:
       required: true
   - type: dropdown
