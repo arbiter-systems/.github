@@ -1,34 +1,72 @@
-name: Bug
-description: Report a defect or regression in Arbiter Systems repositories.
+name: Bug issue
+description: Report a defect, regression, or broken expected behavior.
 title: "fix: "
 labels: ["type/bug"]
 body:
-  - type: textarea
-    id: goal
+  - type: markdown
     attributes:
-      label: Goal
-      description: What user-visible or system outcome should be restored?
+      value: |
+        Use public-safe wording only. Do not paste secrets, tokens, provider keys, raw prompts, customer data, provider payloads, private links, local logs, stack traces with sensitive paths, or incident details.
+  - type: input
+    id: affected_repo
+    attributes:
+      label: Affected repository or area
+      placeholder: control-plane-api, ai-execution-service, arbiter-console, arbiter-site, .github, company, or security
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is broken?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Keep this public-safe. Summarize logs instead of pasting sensitive output.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction or evidence
+      description: Provide safe reproduction steps or sanitized evidence.
+      value: |
+        1. ...
+        2. ...
+        3. ...
     validations:
       required: true
   - type: textarea
     id: scope
     attributes:
       label: Scope
-      description: What is in scope to fix in this issue?
+      description: What should be fixed in this issue?
+      value: |
+        - [ ] ...
     validations:
       required: true
   - type: textarea
     id: non_goals
     attributes:
       label: Non-goals
-      description: What is explicitly out of scope?
+      value: |
+        - No unrelated refactors.
+        - No Project field hydration or issue-body backfilling.
     validations:
-      required: false
+      required: true
   - type: textarea
-    id: acceptance_criteria
+    id: acceptance
     attributes:
       label: Acceptance criteria
-      description: Define the conditions for completion.
       value: |
         - [ ] ...
     validations:
@@ -36,50 +74,44 @@ body:
   - type: textarea
     id: validation
     attributes:
-      label: Validation
-      description: Codex-ready validation commands or evidence that should be produced.
+      label: Suggested validation
+      placeholder: |
+        ```bash
+        npm test
+        ```
     validations:
-      required: false
-  - type: markdown
-    attributes:
-      value: |
-        ## Suggested labels
-
-        Labels must come from the canonical taxonomy: ../../docs/operations/github-label-taxonomy.md
-
-        Canonical label families:
-        - type/*
-        - priority/*
-        - phase/*
-        - area/*
-        - component/*
-
-        Do not create labels for Project field values; see the label taxonomy for the boundary between labels and Project fields.
-  - type: markdown
-    attributes:
-      value: |
-        ## Suggested Project fields
-
-        Project fields are managed in the Arbiter GitHub Project and are not represented as labels. See: ../../docs/operations/github-project-operating-model.md
-
-        - Status:
-        - Implementation Order:
-        - Lane:
-        - Blocked By:
-        - Release Gate:
-        - Validation Command:
-        - Agent:
-        - Last Reviewed:
-        - Confidence:
-        - Implementation Readiness:
-        - Scope Risk:
-        - Project Priority:
-        - Phase:
-        - Workstream:
+      required: true
   - type: textarea
-    id: follow_ups
+    id: security_privacy
     attributes:
-      label: Follow-up issues
-      description: Capture deferred work discovered during implementation instead of expanding this issue.
+      label: Security and privacy considerations
+      placeholder: Public-safe only; no raw prompts, secrets, customer data, logs, or provider payloads.
     validations:
-      required: false
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - blocker
+        - high
+        - medium
+        - low
+    validations:
+      required: true
+  - type: dropdown
+    id: readiness
+    attributes:
+      label: Implementation readiness
+      options:
+        - ready
+        - needs-clarification
+        - blocked
+        - discovery-only
+    validations:
+      required: true
+  - type: textarea
+    id: blockers
+    attributes:
+      label: Dependencies or blockers
+      placeholder: None
