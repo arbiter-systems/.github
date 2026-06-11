@@ -2,91 +2,17 @@ name: Project Field Hydration
 
 on:
   workflow_dispatch:
-    inputs:
-      issue_number:
-        description: "Issue number to hydrate"
-        required: true
-        type: string
-      repo:
-        description: "Owner/repo containing the issue"
-        required: false
-        default: "arbiter-systems/.github"
-        type: string
-      dry_run:
-        description: "Run hydration without writing project fields"
-        required: false
-        default: "true"
-        type: choice
-        options:
-          - "true"
-          - "false"
 
 permissions:
   contents: read
   issues: read
 
-concurrency:
-  group: project-field-hydration-${{ inputs.repo }}-${{ inputs.issue_number }}
-  cancel-in-progress: true
-
 jobs:
-  preflight:
-    if: ${{ github.actor != 'github-actions[bot]' }}
+  hydration-retired:
     runs-on: ubuntu-latest
-    timeout-minutes: 1
-    outputs:
-      should_run: ${{ steps.check.outputs.should_run }}
     steps:
-      - name: Preflight hydration configuration
-        id: check
-        env:
-          PROJECT_FIELD_HYDRATION_ENABLED: ${{ vars.PROJECT_FIELD_HYDRATION_ENABLED }}
-          PROJECT_AUTOMATION_APP_ID: ${{ vars.PROJECT_AUTOMATION_APP_ID || secrets.PROJECT_AUTOMATION_APP_ID }}
-          PROJECT_AUTOMATION_PRIVATE_KEY: ${{ secrets.PROJECT_AUTOMATION_PRIVATE_KEY }}
-          DRY_RUN: ${{ inputs.dry_run }}
+      - name: Explain retired hydration
         run: |
-          echo "[info] DRY_RUN=${DRY_RUN}"
-
-          if [ "${PROJECT_FIELD_HYDRATION_ENABLED}" != "true" ]; then
-            echo "[notice] Project field hydration is disabled. Set PROJECT_FIELD_HYDRATION_ENABLED=true to allow runs."
-            echo "should_run=false" >> "${GITHUB_OUTPUT}"
-            exit 0
-          fi
-
-          if [ -z "${PROJECT_AUTOMATION_APP_ID}" ]; then
-            echo "[error] Missing PROJECT_AUTOMATION_APP_ID variable or secret"
-            exit 1
-          fi
-
-          if [ -z "${PROJECT_AUTOMATION_PRIVATE_KEY}" ]; then
-            echo "[error] Missing PROJECT_AUTOMATION_PRIVATE_KEY secret"
-            exit 1
-          fi
-
-          echo "[info] PROJECT_AUTOMATION_APP_ID configured"
-          echo "should_run=true" >> "${GITHUB_OUTPUT}"
-
-  hydrate-project-fields:
-    needs: preflight
-    if: ${{ needs.preflight.outputs.should_run == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Hydrate project fields
-        env:
-          PROJECT_AUTOMATION_APP_ID: ${{ vars.PROJECT_AUTOMATION_APP_ID || secrets.PROJECT_AUTOMATION_APP_ID }}
-          PROJECT_AUTOMATION_PRIVATE_KEY: ${{ secrets.PROJECT_AUTOMATION_PRIVATE_KEY }}
-          PROJECT_AUTOMATION_PROJECT: ${{ vars.PROJECT_AUTOMATION_PROJECT || 'arbiter-systems/2' }}
-          DRY_RUN: ${{ inputs.dry_run }}
-        run: >
-          node scripts/hydrate-project-fields.cjs
-          --issue-number "${{ inputs.issue_number }}"
-          --repo "${{ inputs.repo }}"
-          --dry-run "${DRY_RUN}"
-          --project "${PROJECT_AUTOMATION_PROJECT}"
+          echo "Project field hydration is retired for Arbiter Systems planning."
+          echo "Use labels, milestones, issue body sections, and manual triage instead."
+          echo "See docs/project-field-hydration-retirement.md."
