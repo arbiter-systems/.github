@@ -1,34 +1,55 @@
-name: Docs
-description: Track documentation changes for Arbiter Systems repositories.
+name: Docs issue
+description: Track public-safe documentation changes.
 title: "docs: "
 labels: ["type/docs"]
 body:
-  - type: textarea
-    id: goal
+  - type: markdown
     attributes:
-      label: Goal
-      description: What outcome should this documentation change achieve?
+      value: |
+        Use public-safe wording only. Do not include private roadmap details, internal implementation sequencing, raw prompts, provider payloads, customer data, private links, or unsupported compliance/savings/customer claims.
+  - type: input
+    id: affected_docs
+    attributes:
+      label: Affected docs or repository area
+      placeholder: docs/engineering/testing-standard.md, AGENTS.md, README.md, .github templates
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What documentation should change?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why is this doc change needed?
     validations:
       required: true
   - type: textarea
     id: scope
     attributes:
       label: Scope
-      description: What is in scope for this issue?
+      value: |
+        - [ ] ...
     validations:
       required: true
   - type: textarea
     id: non_goals
     attributes:
       label: Non-goals
-      description: What is explicitly out of scope?
+      value: |
+        - No runtime code changes.
+        - No Project field hydration or issue-body backfilling.
+        - No private runbooks or sensitive implementation details in public docs.
     validations:
-      required: false
+      required: true
   - type: textarea
-    id: acceptance_criteria
+    id: acceptance
     attributes:
       label: Acceptance criteria
-      description: Define the conditions for completion.
       value: |
         - [ ] ...
     validations:
@@ -36,50 +57,34 @@ body:
   - type: textarea
     id: validation
     attributes:
-      label: Validation
-      description: Codex-ready validation commands or evidence that should be produced.
+      label: Suggested validation
+      placeholder: |
+        ```bash
+        npx prettier --check "**/*.{md,yml,yaml,json}"
+        ```
     validations:
-      required: false
-  - type: markdown
-    attributes:
-      value: |
-        ## Suggested labels
-
-        Labels must come from the canonical taxonomy: ../../docs/operations/github-label-taxonomy.md
-
-        Canonical label families:
-        - type/*
-        - priority/*
-        - phase/*
-        - area/*
-        - component/*
-
-        Do not create labels for Project field values; see the label taxonomy for the boundary between labels and Project fields.
-  - type: markdown
-    attributes:
-      value: |
-        ## Suggested Project fields
-
-        Project fields are managed in the Arbiter GitHub Project and are not represented as labels. See: ../../docs/operations/github-project-operating-model.md
-
-        - Status:
-        - Implementation Order:
-        - Lane:
-        - Blocked By:
-        - Release Gate:
-        - Validation Command:
-        - Agent:
-        - Last Reviewed:
-        - Confidence:
-        - Implementation Readiness:
-        - Scope Risk:
-        - Project Priority:
-        - Phase:
-        - Workstream:
+      required: true
   - type: textarea
-    id: follow_ups
+    id: security_privacy
     attributes:
-      label: Follow-up issues
-      description: Capture deferred work discovered during implementation instead of expanding this issue.
+      label: Public/private boundary check
+      placeholder: Confirm this doc change does not expose secrets, raw prompts, customer data, provider payloads, private planning, or unsupported claims.
     validations:
-      required: false
+      required: true
+  - type: dropdown
+    id: release_gate
+    attributes:
+      label: MVP or release gate relevance
+      options:
+        - local-mvp
+        - hosted-demo
+        - private-beta
+        - post-mvp
+        - not-release-gated
+    validations:
+      required: true
+  - type: textarea
+    id: blockers
+    attributes:
+      label: Dependencies or blockers
+      placeholder: None
