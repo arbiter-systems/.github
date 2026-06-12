@@ -19,6 +19,8 @@ Our current focus is an **AI Execution Firewall** for engineering teams that nee
 
 Arbiter Systems is in early product development. Current work is focused on a bounded MVP, public-safe infrastructure documentation, and design-partner evaluation.
 
+Shared public-safe MVP feature language is tracked in this repository under `docs/public-mvp-feature-language.md`.
+
 ## Contact
 
 For business, startup program, infrastructure credit, or design-partner inquiries:
