@@ -15,6 +15,12 @@ Do not publish:
 - service contracts, runtime topology, local validation logs, implementation sequencing, or private issue references
 - security findings, vulnerability baselines, audit worksheets, or known-gap reports
 
+## Internal policy boundary
+
+Detailed internal agent capability models, authority matrices, prompt templates, workflow permission rules, project-field rules, automation runbooks, branch-protection details, security evidence, private validation records, and governance records belong in private `arbiter-systems/company` docs, not in this public repository.
+
+Keep public policy references high-level and public-safe.
+
 ## Change guidance
 
 - Keep changes small, public-facing, and issue-scoped.
