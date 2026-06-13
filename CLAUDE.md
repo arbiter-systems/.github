@@ -17,6 +17,12 @@ Do not add or expose:
 - service contracts, runtime topology, local validation logs, implementation sequencing, or private issue references
 - security findings, vulnerability baselines, audit worksheets, or known-gap reports
 
+## Internal policy boundary
+
+Detailed internal agent policy belongs in private company documentation, not in this public repository.
+
+Keep public guidance high-level and public-safe.
+
 ## Review posture
 
 For public documentation changes, check:
