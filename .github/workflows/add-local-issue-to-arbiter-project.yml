@@ -13,4 +13,5 @@ jobs:
     if: ${{ !contains(github.event.issue.labels.*.name, 'no-project') }}
     uses: ./.github/workflows/add-issue-to-arbiter-project.yml
     secrets:
-      ARBITER_PROJECTS_TOKEN: ${{ secrets.ARBITER_PROJECTS_TOKEN }}
+      PROJECT_AUTOMATION_APP_ID: ${{ secrets.PROJECT_AUTOMATION_APP_ID }}
+      PROJECT_AUTOMATION_PRIVATE_KEY: ${{ secrets.PROJECT_AUTOMATION_PRIVATE_KEY }}

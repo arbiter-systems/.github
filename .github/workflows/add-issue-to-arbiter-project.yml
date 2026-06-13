@@ -14,8 +14,11 @@ on:
         type: string
         default: no-project
     secrets:
-      ARBITER_PROJECTS_TOKEN:
-        description: Token with organization project write access.
+      PROJECT_AUTOMATION_APP_ID:
+        description: GitHub App client ID for project automation.
+        required: true
+      PROJECT_AUTOMATION_PRIVATE_KEY:
+        description: Private key for the project automation GitHub App.
         required: true
 
 permissions:
@@ -27,8 +30,20 @@ jobs:
     if: ${{ github.event.issue != null && !contains(github.event.issue.labels.*.name, inputs.skip-label) }}
     runs-on: ubuntu-latest
     steps:
+      - name: Create project automation app token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.PROJECT_AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.PROJECT_AUTOMATION_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-organization-projects: write
+          permission-issues: read
+          permission-pull-requests: read
+
       - name: Add issue to Arbiter Project
         uses: actions/add-to-project@v1.0.2
         with:
           project-url: ${{ inputs.project-url }}
-          github-token: ${{ secrets.ARBITER_PROJECTS_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
