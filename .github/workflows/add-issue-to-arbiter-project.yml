@@ -1,0 +1,34 @@
+name: Add issue to Arbiter Project
+
+on:
+  workflow_call:
+    inputs:
+      project-url:
+        description: GitHub Projects URL for the Arbiter execution board.
+        required: false
+        type: string
+        default: https://github.com/orgs/arbiter-systems/projects/2
+      skip-label:
+        description: Label that intentionally excludes an issue from project auto-add.
+        required: false
+        type: string
+        default: no-project
+    secrets:
+      ARBITER_PROJECTS_TOKEN:
+        description: Token with organization project write access.
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  add-issue:
+    name: Add issue to project
+    if: ${{ github.event.issue != null && !contains(github.event.issue.labels.*.name, inputs.skip-label) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add issue to Arbiter Project
+        uses: actions/add-to-project@v1.0.2
+        with:
+          project-url: ${{ inputs.project-url }}
+          github-token: ${{ secrets.ARBITER_PROJECTS_TOKEN }}
