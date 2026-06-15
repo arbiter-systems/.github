@@ -23,6 +23,13 @@ Detailed internal agent policy belongs in private company documentation, not in 
 
 Keep public guidance high-level and public-safe.
 
+## Git operations
+
+- Do not create branches, commits, pushes, or pull requests unless explicitly requested.
+- When branch creation is explicitly requested, branch from `main` and use a branch name containing both the GitHub issue number and a short issue-title slug, such as `123-update-pr-template-guidance`.
+- Do not use vague branch names such as `fix-issue`, `implementation`, `updates`, or `codex-fix`.
+- Read-only Git inspection is allowed.
+
 ## Review posture
 
 For public documentation changes, check:
