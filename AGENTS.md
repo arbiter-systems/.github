@@ -29,6 +29,16 @@ Keep public policy references high-level and public-safe.
 - Do not add product source code, runtime infrastructure, service contracts, private planning records, or internal operating runbooks here.
 - Do not expand implementation scope to satisfy a general best practice; preserve the issue scope and document tradeoffs.
 
+## Git and completion
+
+- Work only on the issue branch unless instructed otherwise.
+- Branch from `main` for this repository.
+- Branch names must include both the GitHub issue number and a short slug of the issue title, such as `123-update-pr-template-guidance`.
+- Do not create vague branches such as `fix-issue`, `implementation`, `updates`, or `codex-fix`.
+- Check `git status` before and after changes.
+- Keep commits focused.
+- Do not overwrite unrelated local changes.
+
 ## Quality checks
 
 Before calling work complete, confirm:
